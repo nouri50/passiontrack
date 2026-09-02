@@ -1,0 +1,11 @@
+.layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-page);
+}
+
+.layout-content {
+    flex: 1;
+    padding: 32px;
+}
