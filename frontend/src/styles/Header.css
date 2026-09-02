@@ -1,0 +1,123 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: var(--accent-gradient);
+}
+
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.header-logo-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.header-logo-icon circle,
+.header-logo-icon path {
+    stroke: #ffffff;
+}
+
+.header-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.header-nav {
+    display: flex;
+    gap: 28px;
+}
+
+.header-nav a {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.header-nav a:hover {
+    color: #ffffff;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+}
+
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.header-logout {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s ease;
+}
+
+.header-logout:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.header-login-link {
+    background: #ffffff;
+    color: var(--accent-end);
+    padding: 8px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+
+.header-user-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}
+
+.header-user-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.header-nav-notif {
+    position: relative;
+}
+
+.header-notif-badge {
+    position: absolute;
+    top: -8px;
+    right: -14px;
+    background: #ff3b5c;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}

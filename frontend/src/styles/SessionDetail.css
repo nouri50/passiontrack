@@ -1,0 +1,219 @@
+.session-detail-loading,
+.session-detail-error {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 60px 0;
+}
+
+.session-detail-page {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.session-detail-back {
+    display: inline-block;
+    color: var(--accent-start);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.session-detail-back:hover {
+    text-decoration: underline;
+}
+
+.session-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.session-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 6px;
+}
+
+.session-detail-meta {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.session-detail-delete {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--color-error);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.session-detail-delete:hover {
+    border-color: var(--color-error);
+}
+
+.session-detail-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 16px 0 24px;
+}
+
+.session-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.session-detail-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.session-detail-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.session-detail-value {
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.session-detail-section {
+    margin-bottom: 32px;
+}
+
+.session-detail-section h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 14px;
+}
+
+.session-detail-data-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.session-detail-data-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.session-detail-data-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.session-detail-data-value {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.session-detail-notes {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 0;
+}
+
+.session-detail-analysis {
+    background: var(--bg-elevated);
+    border: 1px solid var(--accent-start);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.15);
+}
+
+.analysis-summary {
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 16px;
+}
+
+.analysis-block {
+    margin-bottom: 14px;
+}
+
+.analysis-block:last-child {
+    margin-bottom: 0;
+}
+
+.analysis-block-title {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+}
+
+.analysis-block-title--good {
+    color: var(--color-success);
+}
+
+.analysis-block-title--bad {
+    color: var(--color-error);
+}
+
+.analysis-block-title--tip {
+    color: var(--accent-tertiary);
+}
+
+.analysis-block ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.session-detail-analysis-empty {
+    background: var(--bg-elevated);
+    border: 1px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.ai-analyze-btn {
+    margin-top: 12px;
+    background: var(--accent-gradient);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ai-analyze-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
