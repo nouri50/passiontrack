@@ -1,0 +1,33 @@
+:root {
+    --bg-page: #14111f;
+        --bg-surface: #1b1729;
+        --bg-elevated: #221d33;
+
+    /* Accent primaire (violet -> indigo, comme la maquette) */
+    --accent-start: #667eea;
+    --accent-end: #764ba2;
+    --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+
+    /* Accent secondaire (rose chaud, complémentaire) */
+    --accent-secondary: #ff6b9d;
+    --accent-secondary-dark: #e0457d;
+
+    /* Accent tertiaire (ambre, pour variation) */
+    --accent-tertiary: #ffb454;
+    --accent-tertiary-dark: #e0943a;
+
+    /* États */
+    --color-success: #6fcf7a;
+    --color-warning: #ffb454;
+    --color-error: #ff6b6b;
+    --color-info: #667eea;
+
+    /* Texte */
+    --text-primary: #f5f5f5;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+
+    /* Bordures */
+    --border-default: #29292f;
+    --border-strong: #38383f;
+}

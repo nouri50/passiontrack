@@ -66,7 +66,7 @@ final class RegisterController extends AbstractController
             'user' => [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
-                'username' => $user->getUsername(),
+                'username' => $user->getUsernameField(),
             ]
         ], 201);
     }

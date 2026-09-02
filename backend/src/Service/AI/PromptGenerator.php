@@ -21,7 +21,7 @@ class PromptGenerator
             default => "Analyse cette session d'activité : titre \"{$title}\", durée {$duration}s, données: {$data}.",
         };
 
-        return $basePrompt . " Réponds UNIQUEMENT en JSON valide avec cette structure exacte : "
+        return $basePrompt . " Réponds UNIQUEMENT en JSON valide, ENTIÈREMENT EN FRANÇAIS (tous les textes doivent être en français, pas d'anglais), avec cette structure exacte : "
             . '{"strengths": ["point fort 1", "point fort 2"], "weaknesses": ["point faible 1"], '
             . '"tips": ["conseil 1", "conseil 2"], "predictions": ["prédiction 1"], "summary": "résumé court en une phrase"}';
     }
