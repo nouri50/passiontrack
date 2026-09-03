@@ -88,6 +88,7 @@ final class SessionController extends AbstractController
         $session->setUser($user);
         $session->setCategory($category);
         $session->setTitle($data['title']);
+        $session->setSubcategery($data['subcategory'] ?? null);
         $session->setDescription($data['description'] ?? null);
         $session->setDateStart(new \DateTime($data['date_start']));
         $session->setDateEnd(new \DateTime($data['date_end']));
@@ -145,6 +146,9 @@ final class SessionController extends AbstractController
 
         if (isset($data['title'])) {
             $session->setTitle($data['title']);
+        }
+        if (array_key_exists('subcategory', $data)) {
+            $session->setSubcategery($data['subcategory']);
         }
         if (isset($data['description'])) {
             $session->setDescription($data['description']);
@@ -206,6 +210,7 @@ final class SessionController extends AbstractController
             'id' => $session->getId(),
             'category_id' => $session->getCategory()->getId(),
             'category_name' => $session->getCategory()->getName(),
+            'subcategory' => $session->getSubcategery(),
             'title' => $session->getTitle(),
             'description' => $session->getDescription(),
             'date_start' => $session->getDateStart()->format('Y-m-d H:i:s'),

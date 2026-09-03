@@ -26,6 +26,7 @@ function Dashboard() {
   } = useNotificationStore();
 
   const [sessions, setSessions] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [categories, setCategories] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
