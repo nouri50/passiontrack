@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories } from "../services/categoryService";
 import { createSession } from "../services/sessionService";
@@ -19,6 +19,7 @@ function SessionForm() {
   const addToast = useToastStore((state) => state.addToast);
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState("");
+  const [subcategory, setSubcategory] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dateStart, setDateStart] = useState("");
@@ -29,7 +30,7 @@ function SessionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useState(() => {
+  useEffect(() => {
     async function load() {
       try {
         const data = await getCategories();
@@ -63,6 +64,16 @@ function SessionForm() {
   const dynamicUnits = Array.isArray(selectedCategory?.metadata?.units)
     ? selectedCategory.metadata.units
     : [];
+  const subcategoryOptions = Array.isArray(
+    selectedCategory?.metadata?.subcategories,
+  )
+    ? selectedCategory.metadata.subcategories
+    : [];
+
+  const handleCategoryChange = (value) => {
+    setCategoryId(value);
+    setSubcategory("");
+  };
 
   const handleExtraChange = (fieldLabel, value) => {
     const key = slugifyKey(fieldLabel);
@@ -84,6 +95,7 @@ function SessionForm() {
     try {
       const payload = {
         category_id: Number(categoryId),
+        subcategory: subcategory || null,
         title,
         description: description || null,
         date_start: dateStart.replace("T", " ") + ":00",
@@ -122,7 +134,7 @@ function SessionForm() {
           <select
             id="category"
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             required
           >
             <option value="">Sélectionne une catégorie</option>
@@ -133,6 +145,24 @@ function SessionForm() {
             ))}
           </select>
         </div>
+
+        {subcategoryOptions.length > 0 && (
+          <div className="session-form-field">
+            <label htmlFor="subcategory">Sous-catégorie</label>
+            <select
+              id="subcategory"
+              value={subcategory}
+              onChange={(e) => setSubcategory(e.target.value)}
+            >
+              <option value="">Aucune / Autre</option>
+              {subcategoryOptions.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="session-form-field">
           <label htmlFor="title">Titre *</label>

@@ -8,6 +8,7 @@ function Sessions() {
   const [sessions, setSessions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -30,12 +31,28 @@ function Sessions() {
     loadSessions();
   }, []);
 
-  const displayedSessions =
+  const handleCategoryClick = (value) => {
+    setSelectedCategory(value);
+    setSelectedSubcategory("all");
+  };
+
+  const byCategory =
     selectedCategory === "all"
       ? sessions
       : sessions.filter(
           (session) => String(session.category_id) === selectedCategory,
         );
+
+  const availableSubcategories = [
+    ...new Set(
+      byCategory.map((s) => s.subcategory).filter((s) => s && s.trim() !== ""),
+    ),
+  ];
+
+  const displayedSessions =
+    selectedSubcategory === "all"
+      ? byCategory
+      : byCategory.filter((s) => s.subcategory === selectedSubcategory);
 
   const formatDuration = (duration) => {
     if (!duration) return "Durée non renseignée";
@@ -71,7 +88,7 @@ function Sessions() {
         <button
           type="button"
           className={`filter-button ${selectedCategory === "all" ? "filter-button--active" : ""}`}
-          onClick={() => setSelectedCategory("all")}
+          onClick={() => handleCategoryClick("all")}
         >
           Toutes
         </button>
@@ -85,12 +102,40 @@ function Sessions() {
                 ? "filter-button--active"
                 : ""
             }`}
-            onClick={() => setSelectedCategory(String(category.id))}
+            onClick={() => handleCategoryClick(String(category.id))}
           >
             {category.name}
           </button>
         ))}
       </section>
+
+      {availableSubcategories.length > 0 && (
+        <section
+          className="sessions-filters sessions-filters--sub"
+          aria-label="Filtrer par sous-catégorie"
+        >
+          <button
+            type="button"
+            className={`filter-button ${selectedSubcategory === "all" ? "filter-button--active" : ""}`}
+            onClick={() => setSelectedSubcategory("all")}
+          >
+            Toutes sous-catégories
+          </button>
+
+          {availableSubcategories.map((sub) => (
+            <button
+              type="button"
+              key={sub}
+              className={`filter-button ${
+                selectedSubcategory === sub ? "filter-button--active" : ""
+              }`}
+              onClick={() => setSelectedSubcategory(sub)}
+            >
+              {sub}
+            </button>
+          ))}
+        </section>
+      )}
 
       {displayedSessions.length === 0 ? (
         <section className="sessions-empty">
@@ -121,7 +166,10 @@ function Sessions() {
               <div className="session-card-content">
                 <div className="session-card-heading">
                   <h2>{session.title}</h2>
-                  <span>{session.category_name}</span>
+                  <span>
+                    {session.category_name}
+                    {session.subcategory ? ` · ${session.subcategory}` : ""}
+                  </span>
                 </div>
 
                 <div className="session-card-meta">

@@ -69,6 +69,9 @@ class Session
     #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'related_session')]
     private Collection $notifications;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $subcategery = null;
+
     public function __construct()
     {
         $this->analyses = new ArrayCollection();
@@ -292,6 +295,18 @@ class Session
                 $notification->setRelatedSession(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getSubcategery(): ?string
+    {
+        return $this->subcategery;
+    }
+
+    public function setSubcategery(?string $subcategery): static
+    {
+        $this->subcategery = $subcategery;
 
         return $this;
     }
