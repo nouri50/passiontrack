@@ -1,0 +1,69 @@
+{
+    "header": {
+        "dashboard": "Dashboard",
+        "sessions": "Sessions",
+        "analytics": "Analytics",
+        "notifications": "Notifications",
+        "categories": "Categories",
+        "logout": "Logout",
+        "login": "Login"
+    },
+    "auth": {
+        "loginTitle": "Login",
+        "loginSubtitle": "Log back into your PassionTrack space",
+        "registerTitle": "Sign Up",
+        "email": "Email",
+        "password": "Password",
+        "username": "Username",
+        "confirmPassword": "Confirmation",
+        "loginButton": "Sign in",
+        "registerButton": "Sign up",
+        "noAccount": "Don't have an account yet?",
+        "hasAccount": "Already have an account?",
+        "signUp": "Sign up",
+        "signIn": "Sign in"
+    },
+    "dashboard": {
+        "welcome": "Welcome",
+        "defaultUser": "Enthusiast",
+        "loadingDashboard": "Loading dashboard…",
+        "totalHours": "Total hours",
+        "sinceStart": "Since the beginning",
+        "sessions": "Sessions",
+        "sessionsRecorded": "Sessions recorded",
+        "activeCategories": "Active categories",
+        "passionsTracked": "Passions tracked",
+        "aiAnalysis": "AI Analysis",
+        "noAnalysisFirstSession": "Create a first session to get personalized advice.",
+        "noAnalysisAvailable": "No analysis available for your last session.",
+        "analyzing": "Analysis in progress…",
+        "launchAnalysis": "Run analysis",
+        "progression": "Progression",
+        "noSessionsChart": "Your future sessions will appear here.",
+        "recentActivity": "Recent activity",
+        "recentNotifications": "Recent notifications",
+        "viewAll": "View all",
+        "integrations": "Integrations",
+        "integrationsText": "Connect your tools to automatically enrich your sessions.",
+        "addIntegration": "Add integration",
+        "noSessionsYet": "No sessions recorded yet.",
+        "createFirstSession": "Create my first session"
+    },
+    "sessions": {
+        "title": "My sessions",
+        "subtitle": "Find and analyze all your training sessions.",
+        "newSession": "New session",
+        "all": "All",
+        "noSessionsFound": "No sessions found",
+        "createFirst": "Create your first session to start tracking your progress.",
+        "noneInCategory": "No sessions exist in this category."
+    },
+    "common": {
+        "loading": "Loading...",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "create": "Create"
+    }
+}

@@ -15,6 +15,11 @@ export const createSession = async (payload) => {
     return data;
 };
 
+export const updateSession = async (id, payload) => {
+    const { data } = await api.put(`/sessions/${id}`, payload);
+    return data;
+};
+
 export const deleteSession = async (id) => {
     const { data } = await api.delete(`/sessions/${id}`);
     return data;

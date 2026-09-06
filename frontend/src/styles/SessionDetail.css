@@ -29,16 +29,26 @@
     margin-bottom: 12px;
 }
 
-.session-detail-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 6px;
+.session-detail-header-actions {
+    display: flex;
+    gap: 10px;
 }
 
-.session-detail-meta {
-    color: var(--text-secondary);
-    font-size: 14px;
+.session-detail-edit {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--accent-start);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.session-detail-edit:hover {
+    border-color: var(--accent-start);
+    background: rgba(102, 126, 234, 0.08);
 }
 
 .session-detail-delete {
@@ -53,6 +63,18 @@
 
 .session-detail-delete:hover {
     border-color: var(--color-error);
+}
+
+.session-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 6px;
+}
+
+.session-detail-meta {
+    color: var(--text-secondary);
+    font-size: 14px;
 }
 
 .session-detail-description {

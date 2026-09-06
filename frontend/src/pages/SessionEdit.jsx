@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getCategories } from "../services/categoryService";
-import { createSession } from "../services/sessionService";
+import { getSession, updateSession } from "../services/sessionService";
 import useToastStore from "../stores/toastStore";
 import "../styles/SessionForm.css";
 
@@ -14,9 +14,18 @@ function slugifyKey(label) {
     .replace(/^_|_$/g, "");
 }
 
-function SessionForm() {
+function toDatetimeLocal(value) {
+  if (!value) return "";
+  const d = new Date(value.replace(" ", "T"));
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function SessionEdit() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const addToast = useToastStore((state) => state.addToast);
+
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -33,16 +42,33 @@ function SessionForm() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getCategories();
-        setCategories(Array.isArray(data) ? data : []);
+        const [categoriesData, sessionData] = await Promise.all([
+          getCategories(),
+          getSession(id),
+        ]);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+
+        setCategoryId(String(sessionData.category_id));
+        setSubcategory(sessionData.subcategory || "");
+        setTitle(sessionData.title || "");
+        setDescription(sessionData.description || "");
+        setDateStart(toDatetimeLocal(sessionData.date_start));
+        setDateEnd(toDatetimeLocal(sessionData.date_end));
+        setDurationOverride(
+          sessionData.duration ? String(sessionData.duration) : "",
+        );
+        setNotes(sessionData.notes || "");
+        setExtraData(sessionData.data || {});
       } catch (err) {
         console.error(err);
+        addToast("Impossible de charger cette session.", "error");
+        navigate("/sessions");
       } finally {
         setIsLoading(false);
       }
     }
     load();
-  }, []);
+  }, [id]);
 
   const computedDuration = (() => {
     if (!dateStart || !dateEnd) return "";
@@ -53,7 +79,9 @@ function SessionForm() {
   })();
 
   const duration =
-    durationOverride !== null ? durationOverride : computedDuration;
+    durationOverride !== null && durationOverride !== ""
+      ? durationOverride
+      : computedDuration;
 
   const selectedCategory = categories.find(
     (c) => String(c.id) === String(categoryId),
@@ -75,12 +103,6 @@ function SessionForm() {
   )
     ? selectedCategory.metadata.subcategories
     : [];
-
-  const handleCategoryChange = (value) => {
-    setCategoryId(value);
-    setSubcategory("");
-    setExtraData({});
-  };
 
   const handleExtraChange = (fieldLabel, value) => {
     const key = slugifyKey(fieldLabel);
@@ -112,14 +134,14 @@ function SessionForm() {
         data: extraData,
       };
 
-      const session = await createSession(payload);
-      addToast("Session créée avec succès !", "success");
-      navigate(`/sessions/${session.id}`);
+      await updateSession(id, payload);
+      addToast("Session mise à jour avec succès !", "success");
+      navigate(`/sessions/${id}`);
     } catch (err) {
       addToast(
         err.response?.data?.error ||
           err.response?.data?.errors?.join(", ") ||
-          "Erreur lors de la création de la session.",
+          "Erreur lors de la mise à jour de la session.",
         "error",
       );
     } finally {
@@ -199,7 +221,7 @@ function SessionForm() {
 
   return (
     <div className="session-form-page">
-      <h1 className="session-form-title">Nouvelle session</h1>
+      <h1 className="session-form-title">Modifier la session</h1>
 
       <form onSubmit={handleSubmit} className="session-form-card">
         <div className="session-form-field">
@@ -207,7 +229,10 @@ function SessionForm() {
           <select
             id="category"
             value={categoryId}
-            onChange={(e) => handleCategoryChange(e.target.value)}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setSubcategory("");
+            }}
             required
           >
             <option value="">Sélectionne une catégorie</option>
@@ -289,7 +314,6 @@ function SessionForm() {
             type="number"
             value={duration}
             onChange={(e) => setDurationOverride(e.target.value)}
-            placeholder="Calculée automatiquement si les deux dates sont remplies"
           />
         </div>
 
@@ -319,11 +343,11 @@ function SessionForm() {
           className="session-form-submit"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Création..." : "Créer la session"}
+          {isSubmitting ? "Enregistrement..." : "Enregistrer les modifications"}
         </button>
       </form>
     </div>
   );
 }
 
-export default SessionForm;
+export default SessionEdit;

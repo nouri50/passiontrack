@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getSessions } from "../services/sessionService";
 import { getCategories } from "../services/categoryService";
 import {
@@ -18,6 +19,8 @@ const NOTIF_ICONS = {
 };
 
 function Dashboard() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const user = useAuthStore((state) => state.user);
   const {
     notifications,
@@ -124,23 +127,28 @@ function Dashboard() {
     .slice(0, 3);
 
   if (isLoading) {
-    return <div className="dashboard-loading">Chargement du dashboard…</div>;
+    return (
+      <div className="dashboard-loading">{t("dashboard.loadingDashboard")}</div>
+    );
   }
 
   return (
     <div className="dashboard">
       <section className="dashboard-hero">
         <h1 className="dashboard-welcome">
-          Bienvenue,{" "}
+          {t("dashboard.welcome")},{" "}
           <span className="dashboard-username">
-            {user?.first_name || user?.username || "Passionné"}
+            {user?.first_name || user?.username || t("dashboard.defaultUser")}
           </span>{" "}
           <span aria-hidden="true">🚀</span>
         </h1>
       </section>
 
       {unreadNotifications.length > 0 && (
-        <section className="notif-panel" aria-label="Notifications récentes">
+        <section
+          className="notif-panel"
+          aria-label={t("dashboard.recentNotifications")}
+        >
           {unreadNotifications.map((notification) => (
             <article key={notification.id} className="notif-item">
               <strong>
@@ -150,7 +158,7 @@ function Dashboard() {
               <span>{notification.message}</span>
 
               <small>
-                {new Date(notification.sent_at).toLocaleString("fr-FR")}
+                {new Date(notification.sent_at).toLocaleString(dateLocale)}
               </small>
             </article>
           ))}
@@ -159,11 +167,11 @@ function Dashboard() {
 
       <section className="dashboard-overview">
         <article className="stat-card stat-card--hours">
-          <span className="stat-label">⏱ Heures totales</span>
+          <span className="stat-label">⏱ {t("dashboard.totalHours")}</span>
 
           <strong className="stat-value">{totalDurationHours}h</strong>
 
-          <span className="stat-description">Depuis le début</span>
+          <span className="stat-description">{t("dashboard.sinceStart")}</span>
 
           <div className="stat-progress">
             <div
@@ -179,11 +187,13 @@ function Dashboard() {
         </article>
 
         <article className="stat-card stat-card--sessions">
-          <span className="stat-label">📊 Sessions</span>
+          <span className="stat-label">📊 {t("dashboard.sessions")}</span>
 
           <strong className="stat-value">{sessions.length}</strong>
 
-          <span className="stat-description">Sessions enregistrées</span>
+          <span className="stat-description">
+            {t("dashboard.sessionsRecorded")}
+          </span>
 
           <div className="stat-progress">
             <div
@@ -196,11 +206,15 @@ function Dashboard() {
         </article>
 
         <article className="stat-card stat-card--categories">
-          <span className="stat-label">🎯 Catégories actives</span>
+          <span className="stat-label">
+            🎯 {t("dashboard.activeCategories")}
+          </span>
 
           <strong className="stat-value">{activeCategoriesCount}</strong>
 
-          <span className="stat-description">Passions suivies</span>
+          <span className="stat-description">
+            {t("dashboard.passionsTracked")}
+          </span>
 
           <div className="stat-progress">
             <div
@@ -213,7 +227,9 @@ function Dashboard() {
         </article>
 
         <article className="analysis-card">
-          <span className="analysis-card-title">🤖 Analyse IA</span>
+          <span className="analysis-card-title">
+            🤖 {t("dashboard.aiAnalysis")}
+          </span>
 
           {analysis && !analysis.missing ? (
             <p className="analysis-card-content">{analysis.summary}</p>
@@ -221,8 +237,8 @@ function Dashboard() {
             <>
               <p className="analysis-card-content">
                 {sessions.length === 0
-                  ? "Crée une première session pour obtenir des conseils personnalisés."
-                  : "Aucune analyse disponible pour votre dernière session."}
+                  ? t("dashboard.noAnalysisFirstSession")
+                  : t("dashboard.noAnalysisAvailable")}
               </p>
 
               {analysis?.sessionId && (
@@ -232,7 +248,9 @@ function Dashboard() {
                   onClick={handleAnalyze}
                   disabled={analysisLoading}
                 >
-                  {analysisLoading ? "Analyse en cours…" : "Lancer l'analyse"}
+                  {analysisLoading
+                    ? t("dashboard.analyzing")
+                    : t("dashboard.launchAnalysis")}
                 </button>
               )}
             </>
@@ -240,7 +258,7 @@ function Dashboard() {
         </article>
 
         <article className="progress-card">
-          <h2>📈 Progression</h2>
+          <h2>📈 {t("dashboard.progression")}</h2>
 
           {chartSessions.length > 0 ? (
             <div
@@ -265,9 +283,7 @@ function Dashboard() {
               ))}
             </div>
           ) : (
-            <p className="progress-empty">
-              Vos futures sessions apparaîtront ici.
-            </p>
+            <p className="progress-empty">{t("dashboard.noSessionsChart")}</p>
           )}
         </article>
       </section>
@@ -275,9 +291,9 @@ function Dashboard() {
       <section className="dashboard-bottom-grid">
         <article className="dashboard-panel activity-panel">
           <div className="dashboard-panel-header">
-            <h2>🔥 Activité récente</h2>
+            <h2>🔥 {t("dashboard.recentActivity")}</h2>
 
-            <Link to="/sessions">Voir tout</Link>
+            <Link to="/sessions">{t("dashboard.viewAll")}</Link>
           </div>
 
           {recentSessions.length > 0 ? (
@@ -291,7 +307,9 @@ function Dashboard() {
 
                     <span>
                       {session.category_name} ·{" "}
-                      {new Date(session.date_start).toLocaleDateString("fr-FR")}
+                      {new Date(session.date_start).toLocaleDateString(
+                        dateLocale,
+                      )}
                     </span>
                   </div>
                 </li>
@@ -299,21 +317,21 @@ function Dashboard() {
             </ul>
           ) : (
             <div className="dashboard-empty">
-              <p>Aucune session enregistrée pour le moment.</p>
+              <p>{t("dashboard.noSessionsYet")}</p>
 
-              <Link to="/sessions/new">Créer ma première session</Link>
+              <Link to="/sessions/new">
+                {t("dashboard.createFirstSession")}
+              </Link>
             </div>
           )}
         </article>
 
         <article className="dashboard-panel integrations-panel">
           <div className="dashboard-panel-header">
-            <h2>🔗 Intégrations</h2>
+            <h2>🔗 {t("dashboard.integrations")}</h2>
           </div>
 
-          <p className="integrations-text">
-            Connectez vos outils pour enrichir automatiquement vos sessions.
-          </p>
+          <p className="integrations-text">{t("dashboard.integrationsText")}</p>
 
           <div className="integration-list">
             <span>MSFS</span>
@@ -323,7 +341,7 @@ function Dashboard() {
           </div>
 
           <button type="button" className="integration-button" disabled>
-            + Ajouter une intégration
+            + {t("dashboard.addIntegration")}
           </button>
         </article>
       </section>
