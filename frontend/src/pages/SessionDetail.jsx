@@ -109,9 +109,14 @@ function SessionDetail() {
             {new Date(session.date_start).toLocaleDateString("fr-FR")}
           </span>
         </div>
-        <button className="session-detail-delete" onClick={handleDelete}>
-          Supprimer
-        </button>
+        <div className="session-detail-header-actions">
+          <Link to={`/sessions/${id}/edit`} className="session-detail-edit">
+            Modifier
+          </Link>
+          <button className="session-detail-delete" onClick={handleDelete}>
+            Supprimer
+          </button>
+        </div>
       </div>
 
       {session.description && (

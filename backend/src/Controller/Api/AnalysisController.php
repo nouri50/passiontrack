@@ -47,6 +47,13 @@ final class AnalysisController extends AbstractController
             return $this->json(['error' => 'AI analysis failed: ' . $e->getMessage()], 502);
         }
 
+        // Garde-fou déterministe : si le score de la session est au maximum,
+        // on force 'weaknesses' à vide plutôt que de compter sur Mistral pour
+        // respecter la consigne (on a observé qu'il ne le fait pas de façon fiable).
+        if ($this->isMaxScore($session) && is_array($result['content'] ?? null)) {
+            $result['content']['weaknesses'] = [];
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -105,6 +112,24 @@ final class AnalysisController extends AbstractController
         }
 
         return $this->json($this->serializeAnalysis($analysis));
+    }
+
+    /**
+     * Vérifie si un champ de données commençant par "score" (une fois normalisé)
+     * vaut 100. Utilise "commence par" plutôt qu'une égalité stricte car le nom
+     * exact du champ vu dans /categories est "Score (/100)", pas juste "Score" —
+     * une comparaison stricte risquerait de ne jamais matcher.
+     */
+    private function isMaxScore(Session $session): bool
+    {
+        foreach ($session->getData() as $key => $value) {
+            $normalizedKey = strtolower(str_replace([' ', "'", '_', '-'], '', (string) $key));
+            if (str_starts_with($normalizedKey, 'score') && is_numeric($value)) {
+                return (float) $value >= 100;
+            }
+        }
+
+        return false;
     }
 
     private function serializeAnalysis(Analysis $analysis): array
