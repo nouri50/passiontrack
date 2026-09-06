@@ -99,3 +99,24 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.session-form-field--checkbox {
+    flex-direction: row;
+    align-items: center;
+}
+
+.session-form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.session-form-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-start);
+    cursor: pointer;
+}

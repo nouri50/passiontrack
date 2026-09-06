@@ -2,6 +2,7 @@
 
 namespace App\Controller\Api;
 
+use App\Entity\Analysis;
 use App\Entity\Category;
 use App\Entity\Session;
 use App\Entity\User;
@@ -136,6 +137,16 @@ final class SessionController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // Champs qui influencent la pertinence de l'analyse IA existante
+        $analysisRelevantFields = ['duration', 'data', 'date_start', 'date_end', 'category_id'];
+        $shouldInvalidateAnalysis = false;
+        foreach ($analysisRelevantFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $shouldInvalidateAnalysis = true;
+                break;
+            }
+        }
+
         if (isset($data['category_id'])) {
             $category = $entityManager->getRepository(Category::class)->find($data['category_id']);
             if (!$category) {
@@ -176,6 +187,13 @@ final class SessionController extends AbstractController
         }
 
         $session->setUpdatedAt(new \DateTimeImmutable());
+
+        if ($shouldInvalidateAnalysis) {
+            $existingAnalysis = $entityManager->getRepository(Analysis::class)->findOneBy(['session' => $session]);
+            if ($existingAnalysis) {
+                $entityManager->remove($existingAnalysis);
+            }
+        }
 
         $entityManager->flush();
 

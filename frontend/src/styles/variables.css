@@ -1,7 +1,7 @@
 :root {
     --bg-page: #14111f;
-        --bg-surface: #1b1729;
-        --bg-elevated: #221d33;
+    --bg-surface: #1b1729;
+    --bg-elevated: #221d33;
 
     /* Accent primaire (violet -> indigo, comme la maquette) */
     --accent-start: #667eea;
@@ -30,4 +30,32 @@
     /* Bordures */
     --border-default: #29292f;
     --border-strong: #38383f;
+}
+
+[data-theme="light"] {
+    --bg-page: #c9cdec;
+    --bg-surface: #ffffff;
+    --bg-elevated: #e4e7f9;
+
+    --accent-start: #667eea;
+    --accent-end: #764ba2;
+    --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+
+    --accent-secondary: #e0457d;
+    --accent-secondary-dark: #ff6b9d;
+
+    --accent-tertiary: #e0943a;
+    --accent-tertiary-dark: #ffb454;
+
+    --color-success: #2e9e42;
+    --color-warning: #e0943a;
+    --color-error: #e0453f;
+    --color-info: #667eea;
+
+    --text-primary: #232043;
+    --text-secondary: #5a5680;
+    --text-muted: #8683a3;
+
+    --border-default: #b8bce0;
+    --border-strong: #9498cc;
 }
