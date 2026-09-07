@@ -52,11 +52,18 @@
     "sessions": {
         "title": "My sessions",
         "subtitle": "Find and analyze all your training sessions.",
+        "kicker": "PROGRESS TRACKING",
+        "loadingSessions": "Loading sessions…",
         "newSession": "New session",
         "all": "All",
+        "allSubcategories": "All subcategories",
+        "filterByCategory": "Filter sessions",
+        "filterBySubcategory": "Filter by subcategory",
         "noSessionsFound": "No sessions found",
         "createFirst": "Create your first session to start tracking your progress.",
-        "noneInCategory": "No sessions exist in this category."
+        "createFirstSession": "Create my first session",
+        "noneInCategory": "No sessions exist in this category.",
+        "durationNotSet": "Duration not set"
     },
     "common": {
         "loading": "Loading...",
