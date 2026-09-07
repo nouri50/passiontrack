@@ -145,7 +145,15 @@
     "subcategoriesCount_one": "{{count}} sous-catégorie",
     "subcategoriesCount_other": "{{count}} sous-catégories"
 },
-
+"analytics": {
+    "noData": "Pas encore de données à analyser.",
+    "subtitle": "Vue d'ensemble de ta progression",
+    "totalTime": "Temps total",
+    "avgDuration": "Durée moyenne",
+    "breakdown": "Répartition par catégorie",
+    "sessionsCount_one": "{{count}} session",
+    "sessionsCount_other": "{{count}} sessions"
+},
 
     "common": {
         "loading": "Chargement...",
