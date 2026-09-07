@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getSessions } from "../services/sessionService";
 import { getCategories } from "../services/categoryService";
 import "../styles/Sessions.css";
 
 function Sessions() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
+
   const [sessions, setSessions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -55,7 +59,7 @@ function Sessions() {
       : byCategory.filter((s) => s.subcategory === selectedSubcategory);
 
   const formatDuration = (duration) => {
-    if (!duration) return "Durée non renseignée";
+    if (!duration) return t("sessions.durationNotSet");
 
     const hours = Math.floor(duration / 3600);
     const minutes = Math.floor((duration % 3600) / 60);
@@ -67,30 +71,35 @@ function Sessions() {
   };
 
   if (isLoading) {
-    return <div className="sessions-loading">Chargement des sessions…</div>;
+    return (
+      <div className="sessions-loading">{t("sessions.loadingSessions")}</div>
+    );
   }
 
   return (
     <div className="sessions-page">
       <section className="sessions-hero">
         <div>
-          <p className="page-kicker">SUIVI DE PROGRESSION</p>
-          <h1>Mes sessions</h1>
-          <p>Retrouve et analyse toutes tes sessions d’entraînement.</p>
+          <p className="page-kicker">{t("sessions.kicker")}</p>
+          <h1>{t("sessions.title")}</h1>
+          <p>{t("sessions.subtitle")}</p>
         </div>
 
         <Link to="/sessions/new" className="sessions-create-button">
-          + Nouvelle session
+          + {t("sessions.newSession")}
         </Link>
       </section>
 
-      <section className="sessions-filters" aria-label="Filtrer les sessions">
+      <section
+        className="sessions-filters"
+        aria-label={t("sessions.filterByCategory")}
+      >
         <button
           type="button"
           className={`filter-button ${selectedCategory === "all" ? "filter-button--active" : ""}`}
           onClick={() => handleCategoryClick("all")}
         >
-          Toutes
+          {t("sessions.all")}
         </button>
 
         {categories.map((category) => (
@@ -112,14 +121,14 @@ function Sessions() {
       {availableSubcategories.length > 0 && (
         <section
           className="sessions-filters sessions-filters--sub"
-          aria-label="Filtrer par sous-catégorie"
+          aria-label={t("sessions.filterBySubcategory")}
         >
           <button
             type="button"
             className={`filter-button ${selectedSubcategory === "all" ? "filter-button--active" : ""}`}
             onClick={() => setSelectedSubcategory("all")}
           >
-            Toutes sous-catégories
+            {t("sessions.allSubcategories")}
           </button>
 
           {availableSubcategories.map((sub) => (
@@ -140,16 +149,16 @@ function Sessions() {
       {displayedSessions.length === 0 ? (
         <section className="sessions-empty">
           <span className="sessions-empty-icon">🗂️</span>
-          <h2>Aucune session trouvée</h2>
+          <h2>{t("sessions.noSessionsFound")}</h2>
           <p>
             {selectedCategory === "all"
-              ? "Crée ta première session pour commencer à suivre ta progression."
-              : "Aucune session n’existe dans cette catégorie."}
+              ? t("sessions.createFirst")
+              : t("sessions.noneInCategory")}
           </p>
 
           {selectedCategory === "all" && (
             <Link to="/sessions/new" className="sessions-create-button">
-              Créer ma première session
+              {t("sessions.createFirstSession")}
             </Link>
           )}
         </section>
@@ -175,7 +184,9 @@ function Sessions() {
                 <div className="session-card-meta">
                   <span>
                     📅{" "}
-                    {new Date(session.date_start).toLocaleDateString("fr-FR")}
+                    {new Date(session.date_start).toLocaleDateString(
+                      dateLocale,
+                    )}
                   </span>
                   <span>⏱ {formatDuration(session.duration)}</span>
                 </div>

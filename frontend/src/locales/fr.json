@@ -52,11 +52,18 @@
     "sessions": {
         "title": "Mes sessions",
         "subtitle": "Retrouve et analyse toutes tes sessions d'entraînement.",
+        "kicker": "SUIVI DE PROGRESSION",
+        "loadingSessions": "Chargement des sessions…",
         "newSession": "Nouvelle session",
         "all": "Toutes",
+        "allSubcategories": "Toutes sous-catégories",
+        "filterByCategory": "Filtrer les sessions",
+        "filterBySubcategory": "Filtrer par sous-catégorie",
         "noSessionsFound": "Aucune session trouvée",
         "createFirst": "Crée ta première session pour commencer à suivre ta progression.",
-        "noneInCategory": "Aucune session n'existe dans cette catégorie."
+        "createFirstSession": "Créer ma première session",
+        "noneInCategory": "Aucune session n'existe dans cette catégorie.",
+        "durationNotSet": "Durée non renseignée"
     },
     "common": {
         "loading": "Chargement...",
