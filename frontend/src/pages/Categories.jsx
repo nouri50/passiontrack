@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getCategories,
   createCategory,
@@ -33,6 +34,7 @@ const emptyNewField = {
 };
 
 function Categories() {
+  const { t } = useTranslation();
   const addToast = useToastStore((state) => state.addToast);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,7 +147,7 @@ function Categories() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      addToast("Le nom de la catégorie est obligatoire.", "error");
+      addToast(t("categories.errorNameRequired"), "error");
       return;
     }
 
@@ -167,17 +169,17 @@ function Categories() {
 
       if (editingId) {
         await updateCategory(editingId, payload);
-        addToast("Catégorie mise à jour.", "success");
+        addToast(t("categories.successUpdated"), "success");
       } else {
         await createCategory(payload);
-        addToast("Catégorie créée avec succès.", "success");
+        addToast(t("categories.successCreated"), "success");
       }
 
       resetForm();
       await loadCategories();
     } catch (err) {
       addToast(
-        err.response?.data?.error || "Erreur lors de l'enregistrement.",
+        err.response?.data?.error || t("categories.errorSaving"),
         "error",
       );
     } finally {
@@ -186,35 +188,34 @@ function Categories() {
   };
 
   const handleDeactivate = async (id) => {
-    if (
-      !confirm(
-        "Désactiver cette catégorie ? Elle ne sera plus proposée dans les formulaires.",
-      )
-    )
-      return;
+    if (!confirm(t("categories.deactivateConfirm"))) return;
     try {
       await deleteCategory(id);
-      addToast("Catégorie désactivée.", "success");
+      addToast(t("categories.successDeactivated"), "success");
       await loadCategories();
     } catch (err) {
-      addToast("Erreur lors de la désactivation.", "error");
+      addToast(t("categories.errorDeactivating"), "error");
     }
   };
 
   if (isLoading) {
-    return <div className="categories-loading">Chargement...</div>;
+    return <div className="categories-loading">{t("common.loading")}</div>;
   }
 
   return (
     <div className="categories-page">
-      <h1 className="categories-title">Gestion des catégories</h1>
+      <h1 className="categories-title">{t("categories.pageTitle")}</h1>
 
       <div className="categories-layout">
         <form onSubmit={handleSubmit} className="category-form">
-          <h2>{editingId ? "Modifier la catégorie" : "Nouvelle catégorie"}</h2>
+          <h2>
+            {editingId
+              ? t("categories.editCategoryTitle")
+              : t("categories.newCategoryTitle")}
+          </h2>
 
           <div className="category-form-field">
-            <label htmlFor="cat-name">Nom *</label>
+            <label htmlFor="cat-name">{t("categories.name")}</label>
             <input
               id="cat-name"
               type="text"
@@ -225,7 +226,7 @@ function Categories() {
           </div>
 
           <div className="category-form-field">
-            <label htmlFor="cat-color">Couleur</label>
+            <label htmlFor="cat-color">{t("categories.color")}</label>
             <div className="category-color-row">
               <input
                 id="cat-color"
@@ -240,7 +241,9 @@ function Categories() {
           </div>
 
           <div className="category-form-field">
-            <label htmlFor="cat-description">Description</label>
+            <label htmlFor="cat-description">
+              {t("sessionForm.description")}
+            </label>
             <textarea
               id="cat-description"
               value={form.description}
@@ -253,7 +256,7 @@ function Categories() {
 
           <div className="category-form-section">
             <span className="category-form-section-title">
-              Champs dynamiques
+              {t("categories.dynamicFields")}
             </span>
 
             {form.fields.length > 0 && (
@@ -275,7 +278,7 @@ function Categories() {
               <div className="category-add-row">
                 <input
                   type="text"
-                  placeholder="Nom du champ"
+                  placeholder={t("categories.fieldNamePlaceholder")}
                   value={newField.label}
                   onChange={(e) =>
                     setNewField((p) => ({ ...p, label: e.target.value }))
@@ -287,10 +290,16 @@ function Categories() {
                     setNewField((p) => ({ ...p, type: e.target.value }))
                   }
                 >
-                  <option value="text">Texte</option>
-                  <option value="number">Nombre</option>
-                  <option value="boolean">Oui / Non</option>
-                  <option value="select">Liste déroulante</option>
+                  <option value="text">{t("categories.fieldTypeText")}</option>
+                  <option value="number">
+                    {t("categories.fieldTypeNumber")}
+                  </option>
+                  <option value="boolean">
+                    {t("categories.fieldTypeBoolean")}
+                  </option>
+                  <option value="select">
+                    {t("categories.fieldTypeSelect")}
+                  </option>
                 </select>
               </div>
 
@@ -299,7 +308,7 @@ function Categories() {
                   {newField.type === "select" ? (
                     <input
                       type="text"
-                      placeholder="Options séparées par des virgules"
+                      placeholder={t("categories.optionsPlaceholder")}
                       value={newField.optionsInput}
                       onChange={(e) =>
                         setNewField((p) => ({
@@ -311,7 +320,7 @@ function Categories() {
                   ) : (
                     <input
                       type="text"
-                      placeholder="Unité (optionnel)"
+                      placeholder={t("categories.unitPlaceholder")}
                       value={newField.unit}
                       onChange={(e) =>
                         setNewField((p) => ({ ...p, unit: e.target.value }))
@@ -335,7 +344,7 @@ function Categories() {
                     onClick={addField}
                     className="category-add-btn category-add-btn--wide"
                   >
-                    Ajouter ce champ
+                    {t("categories.addThisField")}
                   </button>
                 </div>
               )}
@@ -343,7 +352,9 @@ function Categories() {
           </div>
 
           <div className="category-form-section">
-            <span className="category-form-section-title">Sous-catégories</span>
+            <span className="category-form-section-title">
+              {t("categories.subcategories")}
+            </span>
 
             {form.subcategories.length > 0 && (
               <ul className="category-tag-list">
@@ -361,7 +372,7 @@ function Categories() {
             <div className="category-add-row">
               <input
                 type="text"
-                placeholder="Nom de la sous-catégorie"
+                placeholder={t("categories.subcategoryPlaceholder")}
                 value={newSubcategory}
                 onChange={(e) => setNewSubcategory(e.target.value)}
               />
@@ -382,10 +393,10 @@ function Categories() {
               disabled={isSubmitting}
             >
               {isSubmitting
-                ? "Enregistrement..."
+                ? t("sessionEdit.submitting")
                 : editingId
-                  ? "Mettre à jour"
-                  : "Créer la catégorie"}
+                  ? t("categories.update")
+                  : t("categories.createCategory")}
             </button>
             {editingId && (
               <button
@@ -393,14 +404,14 @@ function Categories() {
                 className="category-cancel"
                 onClick={resetForm}
               >
-                Annuler
+                {t("common.cancel")}
               </button>
             )}
           </div>
         </form>
 
         <div className="categories-list">
-          <h2>Catégories existantes</h2>
+          <h2>{t("categories.existingCategories")}</h2>
           {categories.map((cat) => (
             <div
               key={cat.id}
@@ -414,13 +425,13 @@ function Categories() {
                     onClick={() => startEdit(cat)}
                     className="category-item-btn"
                   >
-                    Éditer
+                    {t("categories.edit")}
                   </button>
                   <button
                     onClick={() => handleDeactivate(cat.id)}
                     className="category-item-btn category-item-btn--danger"
                   >
-                    Désactiver
+                    {t("categories.deactivate")}
                   </button>
                 </div>
               </div>
@@ -428,8 +439,13 @@ function Categories() {
                 <p className="category-item-desc">{cat.description}</p>
               )}
               <div className="category-item-meta">
-                {(cat.metadata?.fields || []).length} champs ·{" "}
-                {(cat.metadata?.subcategories || []).length} sous-catégories
+                {t("categories.fieldsCount", {
+                  count: (cat.metadata?.fields || []).length,
+                })}{" "}
+                ·{" "}
+                {t("categories.subcategoriesCount", {
+                  count: (cat.metadata?.subcategories || []).length,
+                })}
               </div>
             </div>
           ))}
