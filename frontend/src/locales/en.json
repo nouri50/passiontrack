@@ -155,7 +155,23 @@
     "sessionsCount_one": "{{count}} session",
     "sessionsCount_other": "{{count}} sessions"
 },
-
+"profile": {
+    "title": "My profile",
+    "avatarComingSoon": "Avatar customization is coming soon.",
+    "personalInfo": "Personal information",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "updating": "Updating...",
+    "successProfileUpdated": "Profile updated successfully.",
+    "errorProfileUpdate": "Error updating profile.",
+    "errorPasswordTooShort": "The new password must be at least 8 characters long.",
+    "errorPasswordMismatch": "Passwords do not match.",
+    "successPasswordUpdated": "Password updated successfully.",
+    "errorPasswordChange": "Error changing password."
+},
     "common": {
         "loading": "Loading...",
         "save": "Save",
