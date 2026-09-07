@@ -172,6 +172,13 @@
     "successPasswordUpdated": "Password updated successfully.",
     "errorPasswordChange": "Error changing password."
 },
+"notifications": {
+    "allFilter": "All ({{count}})",
+    "unreadFilter": "Unread ({{count}})",
+    "noUnread": "No unread notifications.",
+    "noneYet": "No notifications yet.",
+    "markAsRead": "Mark as read"
+},
     "common": {
         "loading": "Loading...",
         "save": "Save",

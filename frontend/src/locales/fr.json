@@ -171,6 +171,14 @@
     "successPasswordUpdated": "Mot de passe mis à jour avec succès.",
     "errorPasswordChange": "Erreur lors du changement de mot de passe."
 },
+
+"notifications": {
+    "allFilter": "Toutes ({{count}})",
+    "unreadFilter": "Non lues ({{count}})",
+    "noUnread": "Aucune notification non lue.",
+    "noneYet": "Aucune notification pour le moment.",
+    "markAsRead": "Marquer comme lu"
+},
     "common": {
         "loading": "Chargement...",
         "save": "Enregistrer",

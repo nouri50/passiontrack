@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import useNotificationStore from "../stores/notificationStore";
 import "../styles/Notifications.css";
 
@@ -10,6 +11,8 @@ const NOTIF_ICONS = {
 };
 
 function Notifications() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const { notifications, isLoaded, fetchNotifications, markAsRead, remove } =
     useNotificationStore();
   const [filter, setFilter] = useState("all");
@@ -26,25 +29,25 @@ function Notifications() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   if (!isLoaded) {
-    return <div className="notifications-loading">Chargement...</div>;
+    return <div className="notifications-loading">{t("common.loading")}</div>;
   }
 
   return (
     <div className="notifications-page">
-      <h1 className="notifications-title">Notifications</h1>
+      <h1 className="notifications-title">{t("header.notifications")}</h1>
 
       <div className="notifications-filters">
         <button
           className={`notif-filter-btn ${filter === "all" ? "notif-filter-btn--active" : ""}`}
           onClick={() => setFilter("all")}
         >
-          Toutes ({notifications.length})
+          {t("notifications.allFilter", { count: notifications.length })}
         </button>
         <button
           className={`notif-filter-btn ${filter === "unread" ? "notif-filter-btn--active" : ""}`}
           onClick={() => setFilter("unread")}
         >
-          Non lues ({unreadCount})
+          {t("notifications.unreadFilter", { count: unreadCount })}
         </button>
       </div>
 
@@ -52,8 +55,8 @@ function Notifications() {
         <div className="notifications-empty">
           <p>
             {filter === "unread"
-              ? "Aucune notification non lue."
-              : "Aucune notification pour le moment."}
+              ? t("notifications.noUnread")
+              : t("notifications.noneYet")}
           </p>
         </div>
       ) : (
@@ -71,7 +74,7 @@ function Notifications() {
                 <div className="notification-header">
                   <strong>{n.title}</strong>
                   <span className="notification-time">
-                    {new Date(n.sent_at).toLocaleString("fr-FR")}
+                    {new Date(n.sent_at).toLocaleString(dateLocale)}
                   </span>
                 </div>
                 <p className="notification-message">{n.message}</p>
@@ -82,7 +85,7 @@ function Notifications() {
                   <button
                     className="notif-action-btn"
                     onClick={() => markAsRead(n.id)}
-                    title="Marquer comme lu"
+                    title={t("notifications.markAsRead")}
                   >
                     ✓
                   </button>
@@ -90,7 +93,7 @@ function Notifications() {
                 <button
                   className="notif-action-btn notif-action-btn--delete"
                   onClick={() => remove(n.id)}
-                  title="Supprimer"
+                  title={t("common.delete")}
                 >
                   ×
                 </button>
