@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getSessions } from "../services/sessionService";
 import { getCategories } from "../services/categoryService";
 import "../styles/Analytics.css";
@@ -11,6 +12,7 @@ function formatDuration(seconds) {
 }
 
 function Analytics() {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,17 +36,17 @@ function Analytics() {
   }, []);
 
   if (isLoading) {
-    return <div className="analytics-loading">Chargement...</div>;
+    return <div className="analytics-loading">{t("common.loading")}</div>;
   }
 
   if (sessions.length === 0) {
     return (
       <div className="analytics-page">
-        <h1 className="analytics-title">Analyses</h1>
+        <h1 className="analytics-title">{t("header.analytics")}</h1>
         <div className="analytics-empty">
-          <p>Pas encore de données à analyser.</p>
+          <p>{t("analytics.noData")}</p>
           <Link to="/sessions/new" className="analytics-cta">
-            Créer ma première session
+            {t("dashboard.createFirstSession")}
           </Link>
         </div>
       </div>
@@ -90,28 +92,34 @@ function Analytics() {
 
   return (
     <div className="analytics-page">
-      <h1 className="analytics-title">Analyses</h1>
-      <p className="analytics-subtitle">Vue d'ensemble de ta progression</p>
+      <h1 className="analytics-title">{t("header.analytics")}</h1>
+      <p className="analytics-subtitle">{t("analytics.subtitle")}</p>
 
       <div className="analytics-stats">
         <div className="analytics-stat">
-          <span className="analytics-stat-label">Temps total</span>
+          <span className="analytics-stat-label">
+            {t("analytics.totalTime")}
+          </span>
           <span className="analytics-stat-value">
             {formatDuration(totalDuration)}
           </span>
         </div>
         <div className="analytics-stat">
-          <span className="analytics-stat-label">Sessions</span>
+          <span className="analytics-stat-label">
+            {t("dashboard.sessions")}
+          </span>
           <span className="analytics-stat-value">{totalSessions}</span>
         </div>
         <div className="analytics-stat">
-          <span className="analytics-stat-label">Durée moyenne</span>
+          <span className="analytics-stat-label">
+            {t("analytics.avgDuration")}
+          </span>
           <span className="analytics-stat-value">
             {formatDuration(avgDuration)}
           </span>
         </div>
         <div className="analytics-stat">
-          <span className="analytics-stat-label">Catégories</span>
+          <span className="analytics-stat-label">{t("header.categories")}</span>
           <span className="analytics-stat-value">
             {categoryBreakdown.length}
           </span>
@@ -119,7 +127,7 @@ function Analytics() {
       </div>
 
       <div className="analytics-section">
-        <h2>Progression</h2>
+        <h2>{t("dashboard.progression")}</h2>
         <div className="analytics-chart">
           {chartSessions.map((s) => (
             <div
@@ -133,7 +141,7 @@ function Analytics() {
       </div>
 
       <div className="analytics-section">
-        <h2>Répartition par catégorie</h2>
+        <h2>{t("analytics.breakdown")}</h2>
         <div className="analytics-breakdown">
           {categoryBreakdown.map((cat) => (
             <div className="analytics-breakdown-row" key={cat.id}>
@@ -146,7 +154,7 @@ function Analytics() {
                   {cat.name}
                 </span>
                 <span className="analytics-breakdown-meta">
-                  {cat.count} session{cat.count > 1 ? "s" : ""} ·{" "}
+                  {t("analytics.sessionsCount", { count: cat.count })} ·{" "}
                   {formatDuration(cat.duration)}
                 </span>
               </div>

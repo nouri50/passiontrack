@@ -146,7 +146,15 @@
         "subcategoriesCount_one": "{{count}} subcategory",
         "subcategoriesCount_other": "{{count}} subcategories"
     },
-
+"analytics": {
+    "noData": "No data to analyze yet.",
+    "subtitle": "Overview of your progress",
+    "totalTime": "Total time",
+    "avgDuration": "Average duration",
+    "breakdown": "Breakdown by category",
+    "sessionsCount_one": "{{count}} session",
+    "sessionsCount_other": "{{count}} sessions"
+},
 
     "common": {
         "loading": "Loading...",
