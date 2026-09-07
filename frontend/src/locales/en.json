@@ -65,6 +65,53 @@
         "noneInCategory": "No sessions exist in this category.",
         "durationNotSet": "Duration not set"
     },
+    "sessionForm": {
+        "newSessionTitle": "New session",
+        "category": "Category *",
+        "selectCategory": "Select a category",
+        "subcategory": "Subcategory",
+        "noneOrOther": "None / Other",
+        "titleLabel": "Title *",
+        "description": "Description",
+        "dateStart": "Start date *",
+        "dateEnd": "End date *",
+        "duration": "Duration (seconds)",
+        "durationPlaceholder": "Automatically calculated if both dates are filled in",
+        "specificData": "Specific data —",
+        "notes": "Notes",
+        "selectPlaceholder": "Select...",
+        "submitting": "Creating...",
+        "submit": "Create session",
+        "errorRequired": "Category, title, start date and end date are required.",
+        "successCreated": "Session created successfully!",
+        "errorGeneric": "Error creating session."
+    },
+
+    "sessionEdit": {
+        "title": "Edit session",
+        "loadError": "Unable to load this session.",
+        "successUpdated": "Session updated successfully!",
+        "errorGeneric": "Error updating session.",
+        "submitting": "Saving...",
+        "submit": "Save changes"
+    },
+
+
+    "sessionDetail": {
+        "notFound": "Session not found.",
+        "backToSessions": "Back to sessions",
+        "edit": "Edit",
+        "deleteConfirm": "Permanently delete this session?",
+        "start": "Start",
+        "end": "End",
+        "duration": "Duration",
+        "specificData": "Specific data",
+        "strengths": "Strengths",
+        "weaknesses": "Weaknesses",
+        "tips": "Tips",
+        "noAnalysis": "No analysis for this session.",
+        "analyzeSession": "Analyze this session"
+    },
     "common": {
         "loading": "Loading...",
         "save": "Save",
