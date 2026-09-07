@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getCategories } from "../services/categoryService";
 import { createSession } from "../services/sessionService";
 import useToastStore from "../stores/toastStore";
@@ -15,6 +16,7 @@ function slugifyKey(label) {
 }
 
 function SessionForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const addToast = useToastStore((state) => state.addToast);
   const [categories, setCategories] = useState([]);
@@ -91,10 +93,7 @@ function SessionForm() {
     e.preventDefault();
 
     if (!categoryId || !title || !dateStart || !dateEnd) {
-      addToast(
-        "Catégorie, titre, date de début et date de fin sont obligatoires.",
-        "error",
-      );
+      addToast(t("sessionForm.errorRequired"), "error");
       return;
     }
 
@@ -113,13 +112,13 @@ function SessionForm() {
       };
 
       const session = await createSession(payload);
-      addToast("Session créée avec succès !", "success");
+      addToast(t("sessionForm.successCreated"), "success");
       navigate(`/sessions/${session.id}`);
     } catch (err) {
       addToast(
         err.response?.data?.error ||
           err.response?.data?.errors?.join(", ") ||
-          "Erreur lors de la création de la session.",
+          t("sessionForm.errorGeneric"),
         "error",
       );
     } finally {
@@ -166,7 +165,7 @@ function SessionForm() {
             value={extraData[key] || ""}
             onChange={(e) => handleExtraChange(field, e.target.value)}
           >
-            <option value="">Sélectionner...</option>
+            <option value="">{t("sessionForm.selectPlaceholder")}</option>
             {options.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
@@ -194,23 +193,23 @@ function SessionForm() {
   };
 
   if (isLoading) {
-    return <div className="session-form-loading">Chargement...</div>;
+    return <div className="session-form-loading">{t("common.loading")}</div>;
   }
 
   return (
     <div className="session-form-page">
-      <h1 className="session-form-title">Nouvelle session</h1>
+      <h1 className="session-form-title">{t("sessionForm.newSessionTitle")}</h1>
 
       <form onSubmit={handleSubmit} className="session-form-card">
         <div className="session-form-field">
-          <label htmlFor="category">Catégorie *</label>
+          <label htmlFor="category">{t("sessionForm.category")}</label>
           <select
             id="category"
             value={categoryId}
             onChange={(e) => handleCategoryChange(e.target.value)}
             required
           >
-            <option value="">Sélectionne une catégorie</option>
+            <option value="">{t("sessionForm.selectCategory")}</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
@@ -221,13 +220,13 @@ function SessionForm() {
 
         {subcategoryOptions.length > 0 && (
           <div className="session-form-field">
-            <label htmlFor="subcategory">Sous-catégorie</label>
+            <label htmlFor="subcategory">{t("sessionForm.subcategory")}</label>
             <select
               id="subcategory"
               value={subcategory}
               onChange={(e) => setSubcategory(e.target.value)}
             >
-              <option value="">Aucune / Autre</option>
+              <option value="">{t("sessionForm.noneOrOther")}</option>
               {subcategoryOptions.map((sub) => (
                 <option key={sub} value={sub}>
                   {sub}
@@ -238,7 +237,7 @@ function SessionForm() {
         )}
 
         <div className="session-form-field">
-          <label htmlFor="title">Titre *</label>
+          <label htmlFor="title">{t("sessionForm.titleLabel")}</label>
           <input
             id="title"
             type="text"
@@ -249,7 +248,7 @@ function SessionForm() {
         </div>
 
         <div className="session-form-field">
-          <label htmlFor="description">Description</label>
+          <label htmlFor="description">{t("sessionForm.description")}</label>
           <textarea
             id="description"
             value={description}
@@ -260,7 +259,7 @@ function SessionForm() {
 
         <div className="session-form-row">
           <div className="session-form-field">
-            <label htmlFor="date_start">Date de début *</label>
+            <label htmlFor="date_start">{t("sessionForm.dateStart")}</label>
             <input
               id="date_start"
               type="datetime-local"
@@ -271,7 +270,7 @@ function SessionForm() {
           </div>
 
           <div className="session-form-field">
-            <label htmlFor="date_end">Date de fin *</label>
+            <label htmlFor="date_end">{t("sessionForm.dateEnd")}</label>
             <input
               id="date_end"
               type="datetime-local"
@@ -283,20 +282,20 @@ function SessionForm() {
         </div>
 
         <div className="session-form-field">
-          <label htmlFor="duration">Durée (secondes)</label>
+          <label htmlFor="duration">{t("sessionForm.duration")}</label>
           <input
             id="duration"
             type="number"
             value={duration}
             onChange={(e) => setDurationOverride(e.target.value)}
-            placeholder="Calculée automatiquement si les deux dates sont remplies"
+            placeholder={t("sessionForm.durationPlaceholder")}
           />
         </div>
 
         {dynamicFields.length > 0 && (
           <div className="session-form-dynamic">
             <span className="session-form-dynamic-title">
-              Données spécifiques — {selectedCategory.name}
+              {t("sessionForm.specificData")} {selectedCategory.name}
             </span>
             {dynamicFields.map((field, index) =>
               renderDynamicField(field, index),
@@ -305,7 +304,7 @@ function SessionForm() {
         )}
 
         <div className="session-form-field">
-          <label htmlFor="notes">Notes</label>
+          <label htmlFor="notes">{t("sessionForm.notes")}</label>
           <textarea
             id="notes"
             value={notes}
@@ -319,7 +318,7 @@ function SessionForm() {
           className="session-form-submit"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Création..." : "Créer la session"}
+          {isSubmitting ? t("sessionForm.submitting") : t("sessionForm.submit")}
         </button>
       </form>
     </div>
