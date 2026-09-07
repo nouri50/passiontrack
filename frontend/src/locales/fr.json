@@ -154,7 +154,23 @@
     "sessionsCount_one": "{{count}} session",
     "sessionsCount_other": "{{count}} sessions"
 },
-
+"profile": {
+    "title": "Mon profil",
+    "avatarComingSoon": "La personnalisation de l'avatar arrive bientôt.",
+    "personalInfo": "Informations personnelles",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "updating": "Modification...",
+    "successProfileUpdated": "Profil mis à jour avec succès.",
+    "errorProfileUpdate": "Erreur lors de la mise à jour du profil.",
+    "errorPasswordTooShort": "Le nouveau mot de passe doit faire au moins 8 caractères.",
+    "errorPasswordMismatch": "Les mots de passe ne correspondent pas.",
+    "successPasswordUpdated": "Mot de passe mis à jour avec succès.",
+    "errorPasswordChange": "Erreur lors du changement de mot de passe."
+},
     "common": {
         "loading": "Chargement...",
         "save": "Enregistrer",

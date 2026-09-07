@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import useAuthStore from "../stores/authStore";
 import useToastStore from "../stores/toastStore";
 import { updateProfile, updatePassword } from "../services/userService";
@@ -10,6 +11,7 @@ function initials(user) {
 }
 
 function Profile() {
+  const { t } = useTranslation();
   const { user, fetchUser } = useAuthStore();
   const addToast = useToastStore((state) => state.addToast);
 
@@ -34,10 +36,10 @@ function Profile() {
         email,
       });
       await fetchUser();
-      addToast("Profil mis à jour avec succès.", "success");
+      addToast(t("profile.successProfileUpdated"), "success");
     } catch (err) {
       addToast(
-        err.response?.data?.error || "Erreur lors de la mise à jour du profil.",
+        err.response?.data?.error || t("profile.errorProfileUpdate"),
         "error",
       );
     } finally {
@@ -49,14 +51,11 @@ function Profile() {
     e.preventDefault();
 
     if (newPassword.length < 8) {
-      addToast(
-        "Le nouveau mot de passe doit faire au moins 8 caractères.",
-        "error",
-      );
+      addToast(t("profile.errorPasswordTooShort"), "error");
       return;
     }
     if (newPassword !== confirmPassword) {
-      addToast("Les mots de passe ne correspondent pas.", "error");
+      addToast(t("profile.errorPasswordMismatch"), "error");
       return;
     }
 
@@ -66,14 +65,13 @@ function Profile() {
         current_password: currentPassword,
         new_password: newPassword,
       });
-      addToast("Mot de passe mis à jour avec succès.", "success");
+      addToast(t("profile.successPasswordUpdated"), "success");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
       addToast(
-        err.response?.data?.error ||
-          "Erreur lors du changement de mot de passe.",
+        err.response?.data?.error || t("profile.errorPasswordChange"),
         "error",
       );
     } finally {
@@ -83,25 +81,23 @@ function Profile() {
 
   return (
     <div className="profile-page">
-      <h1 className="profile-title">Mon profil</h1>
+      <h1 className="profile-title">{t("profile.title")}</h1>
 
       <div className="profile-header">
         <div className="profile-avatar">{initials(user)}</div>
         <div>
           <p className="profile-username">{user?.username}</p>
           <p className="profile-email">{user?.email}</p>
-          <p className="profile-avatar-note">
-            La personnalisation de l'avatar arrive bientôt.
-          </p>
+          <p className="profile-avatar-note">{t("profile.avatarComingSoon")}</p>
         </div>
       </div>
 
       <div className="profile-card">
-        <h2>Informations personnelles</h2>
+        <h2>{t("profile.personalInfo")}</h2>
         <form onSubmit={handleProfileSubmit} className="profile-form">
           <div className="profile-row">
             <div className="profile-field">
-              <label htmlFor="first_name">Prénom</label>
+              <label htmlFor="first_name">{t("profile.firstName")}</label>
               <input
                 id="first_name"
                 type="text"
@@ -110,7 +106,7 @@ function Profile() {
               />
             </div>
             <div className="profile-field">
-              <label htmlFor="last_name">Nom</label>
+              <label htmlFor="last_name">{t("profile.lastName")}</label>
               <input
                 id="last_name"
                 type="text"
@@ -121,7 +117,7 @@ function Profile() {
           </div>
 
           <div className="profile-field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t("auth.email")}</label>
             <input
               id="email"
               type="email"
@@ -136,16 +132,18 @@ function Profile() {
             className="profile-submit"
             disabled={profileSubmitting}
           >
-            {profileSubmitting ? "Enregistrement..." : "Enregistrer"}
+            {profileSubmitting ? t("sessionEdit.submitting") : t("common.save")}
           </button>
         </form>
       </div>
 
       <div className="profile-card">
-        <h2>Changer le mot de passe</h2>
+        <h2>{t("profile.changePassword")}</h2>
         <form onSubmit={handlePasswordSubmit} className="profile-form">
           <div className="profile-field">
-            <label htmlFor="current_password">Mot de passe actuel</label>
+            <label htmlFor="current_password">
+              {t("profile.currentPassword")}
+            </label>
             <input
               id="current_password"
               type="password"
@@ -157,7 +155,7 @@ function Profile() {
 
           <div className="profile-row">
             <div className="profile-field">
-              <label htmlFor="new_password">Nouveau mot de passe</label>
+              <label htmlFor="new_password">{t("profile.newPassword")}</label>
               <input
                 id="new_password"
                 type="password"
@@ -167,7 +165,9 @@ function Profile() {
               />
             </div>
             <div className="profile-field">
-              <label htmlFor="confirm_password">Confirmation</label>
+              <label htmlFor="confirm_password">
+                {t("auth.confirmPassword")}
+              </label>
               <input
                 id="confirm_password"
                 type="password"
@@ -183,7 +183,9 @@ function Profile() {
             className="profile-submit"
             disabled={passwordSubmitting}
           >
-            {passwordSubmitting ? "Modification..." : "Changer le mot de passe"}
+            {passwordSubmitting
+              ? t("profile.updating")
+              : t("profile.changePassword")}
           </button>
         </form>
       </div>
