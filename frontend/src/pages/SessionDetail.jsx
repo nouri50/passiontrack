@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getSession, deleteSession } from "../services/sessionService";
 import {
   getSessionAnalysis,
@@ -22,6 +23,8 @@ function formatDuration(seconds) {
 }
 
 function SessionDetail() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const { id } = useParams();
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
@@ -44,7 +47,7 @@ function SessionDetail() {
           setAnalysisMissing(true);
         }
       } catch {
-        setError("Session introuvable.");
+        setError(t("sessionDetail.notFound"));
       } finally {
         setIsLoading(false);
       }
@@ -66,7 +69,7 @@ function SessionDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Supprimer cette session définitivement ?")) return;
+    if (!confirm(t("sessionDetail.deleteConfirm"))) return;
     try {
       await deleteSession(id);
       navigate("/sessions");
@@ -76,15 +79,15 @@ function SessionDetail() {
   };
 
   if (isLoading) {
-    return <div className="session-detail-loading">Chargement...</div>;
+    return <div className="session-detail-loading">{t("common.loading")}</div>;
   }
 
   if (error || !session) {
     return (
       <div className="session-detail-error">
-        <p>{error || "Session introuvable."}</p>
+        <p>{error || t("sessionDetail.notFound")}</p>
         <Link to="/sessions" className="session-detail-back">
-          Retour aux sessions
+          {t("sessionDetail.backToSessions")}
         </Link>
       </div>
     );
@@ -98,7 +101,7 @@ function SessionDetail() {
   return (
     <div className="session-detail-page">
       <Link to="/sessions" className="session-detail-back">
-        ← Retour aux sessions
+        ← {t("sessionDetail.backToSessions")}
       </Link>
 
       <div className="session-detail-header">
@@ -106,15 +109,15 @@ function SessionDetail() {
           <h1 className="session-detail-title">{session.title}</h1>
           <span className="session-detail-meta">
             {session.category_name} ·{" "}
-            {new Date(session.date_start).toLocaleDateString("fr-FR")}
+            {new Date(session.date_start).toLocaleDateString(dateLocale)}
           </span>
         </div>
         <div className="session-detail-header-actions">
           <Link to={`/sessions/${id}/edit`} className="session-detail-edit">
-            Modifier
+            {t("sessionDetail.edit")}
           </Link>
           <button className="session-detail-delete" onClick={handleDelete}>
-            Supprimer
+            {t("common.delete")}
           </button>
         </div>
       </div>
@@ -125,19 +128,23 @@ function SessionDetail() {
 
       <div className="session-detail-grid">
         <div className="session-detail-card">
-          <span className="session-detail-label">Début</span>
+          <span className="session-detail-label">
+            {t("sessionDetail.start")}
+          </span>
           <span className="session-detail-value">
-            {new Date(session.date_start).toLocaleString("fr-FR")}
+            {new Date(session.date_start).toLocaleString(dateLocale)}
           </span>
         </div>
         <div className="session-detail-card">
-          <span className="session-detail-label">Fin</span>
+          <span className="session-detail-label">{t("sessionDetail.end")}</span>
           <span className="session-detail-value">
-            {new Date(session.date_end).toLocaleString("fr-FR")}
+            {new Date(session.date_end).toLocaleString(dateLocale)}
           </span>
         </div>
         <div className="session-detail-card">
-          <span className="session-detail-label">Durée</span>
+          <span className="session-detail-label">
+            {t("sessionDetail.duration")}
+          </span>
           <span className="session-detail-value">
             {formatDuration(session.duration)}
           </span>
@@ -146,7 +153,7 @@ function SessionDetail() {
 
       {dataEntries.length > 0 && (
         <div className="session-detail-section">
-          <h2>Données spécifiques</h2>
+          <h2>{t("sessionDetail.specificData")}</h2>
           <div className="session-detail-data-grid">
             {dataEntries.map(([key, value]) => (
               <div className="session-detail-data-item" key={key}>
@@ -164,13 +171,13 @@ function SessionDetail() {
 
       {session.notes && (
         <div className="session-detail-section">
-          <h2>Notes</h2>
+          <h2>{t("sessionForm.notes")}</h2>
           <p className="session-detail-notes">{session.notes}</p>
         </div>
       )}
 
       <div className="session-detail-section">
-        <h2>🤖 Analyse IA</h2>
+        <h2>🤖 {t("dashboard.aiAnalysis")}</h2>
 
         {analysis && (
           <div className="session-detail-analysis">
@@ -181,7 +188,7 @@ function SessionDetail() {
             {analysis.content?.strengths?.length > 0 && (
               <div className="analysis-block">
                 <span className="analysis-block-title analysis-block-title--good">
-                  Points forts
+                  {t("sessionDetail.strengths")}
                 </span>
                 <ul>
                   {analysis.content.strengths.map((s, i) => (
@@ -194,7 +201,7 @@ function SessionDetail() {
             {analysis.content?.weaknesses?.length > 0 && (
               <div className="analysis-block">
                 <span className="analysis-block-title analysis-block-title--bad">
-                  Points faibles
+                  {t("sessionDetail.weaknesses")}
                 </span>
                 <ul>
                   {analysis.content.weaknesses.map((w, i) => (
@@ -207,11 +214,11 @@ function SessionDetail() {
             {analysis.content?.tips?.length > 0 && (
               <div className="analysis-block">
                 <span className="analysis-block-title analysis-block-title--tip">
-                  Conseils
+                  {t("sessionDetail.tips")}
                 </span>
                 <ul>
-                  {analysis.content.tips.map((t, i) => (
-                    <li key={i}>{t}</li>
+                  {analysis.content.tips.map((tip, i) => (
+                    <li key={i}>{tip}</li>
                   ))}
                 </ul>
               </div>
@@ -221,15 +228,15 @@ function SessionDetail() {
 
         {analysisMissing && (
           <div className="session-detail-analysis-empty">
-            <p>Aucune analyse pour cette session.</p>
+            <p>{t("sessionDetail.noAnalysis")}</p>
             <button
               className="ai-analyze-btn"
               onClick={handleAnalyze}
               disabled={analysisLoading}
             >
               {analysisLoading
-                ? "Analyse en cours..."
-                : "Analyser cette session"}
+                ? t("dashboard.analyzing")
+                : t("sessionDetail.analyzeSession")}
             </button>
           </div>
         )}

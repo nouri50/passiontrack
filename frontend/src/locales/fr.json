@@ -65,6 +65,52 @@
         "noneInCategory": "Aucune session n'existe dans cette catégorie.",
         "durationNotSet": "Durée non renseignée"
     },
+    "sessionForm": {
+        "newSessionTitle": "Nouvelle session",
+        "category": "Catégorie *",
+        "selectCategory": "Sélectionne une catégorie",
+        "subcategory": "Sous-catégorie",
+        "noneOrOther": "Aucune / Autre",
+        "titleLabel": "Titre *",
+        "description": "Description",
+        "dateStart": "Date de début *",
+        "dateEnd": "Date de fin *",
+        "duration": "Durée (secondes)",
+        "durationPlaceholder": "Calculée automatiquement si les deux dates sont remplies",
+        "specificData": "Données spécifiques —",
+        "notes": "Notes",
+        "selectPlaceholder": "Sélectionner...",
+        "submitting": "Création...",
+        "submit": "Créer la session",
+        "errorRequired": "Catégorie, titre, date de début et date de fin sont obligatoires.",
+        "successCreated": "Session créée avec succès !",
+        "errorGeneric": "Erreur lors de la création de la session."
+    },
+
+    "sessionEdit": {
+        "title": "Modifier la session",
+        "loadError": "Impossible de charger cette session.",
+        "successUpdated": "Session mise à jour avec succès !",
+        "errorGeneric": "Erreur lors de la mise à jour de la session.",
+        "submitting": "Enregistrement...",
+        "submit": "Enregistrer les modifications"
+    },
+
+    "sessionDetail": {
+        "notFound": "Session introuvable.",
+        "backToSessions": "Retour aux sessions",
+        "edit": "Modifier",
+        "deleteConfirm": "Supprimer cette session définitivement ?",
+        "start": "Début",
+        "end": "Fin",
+        "duration": "Durée",
+        "specificData": "Données spécifiques",
+        "strengths": "Points forts",
+        "weaknesses": "Points faibles",
+        "tips": "Conseils",
+        "noAnalysis": "Aucune analyse pour cette session.",
+        "analyzeSession": "Analyser cette session"
+    },
     "common": {
         "loading": "Chargement...",
         "save": "Enregistrer",
