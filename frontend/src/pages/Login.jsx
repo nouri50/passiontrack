@@ -1,26 +1,30 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import useAuthStore from "../stores/authStore";
+import useToastStore from "../stores/toastStore";
 import "../styles/Auth.css";
 
 function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
+  const addToast = useToastStore((state) => state.addToast);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     try {
       await login(email, password);
+      addToast(t("auth.loginSuccess"), "success");
       navigate("/dashboard");
     } catch {
-      setError("Email ou mot de passe incorrect");
+      addToast(t("auth.loginError"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -29,14 +33,12 @@ function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1 className="auth-title">Connexion</h1>
-        <p className="auth-subtitle">
-          Reconnecte-toi à ton espace PassionTrack
-        </p>
+        <h1 className="auth-title">{t("auth.loginTitle")}</h1>
+        <p className="auth-subtitle">{t("auth.loginSubtitle")}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t("auth.email")}</label>
             <input
               id="email"
               type="email"
@@ -48,26 +50,36 @@ function Login() {
           </div>
 
           <div className="auth-field">
-            <label htmlFor="password">Mot de passe</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <label htmlFor="password">{t("auth.password")}</label>
+            <div className="auth-password-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="auth-password-toggle"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={
+                  showPassword ? t("auth.hidePassword") : t("auth.showPassword")
+                }
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
-          {error && <p className="auth-error">{error}</p>}
-
           <button type="submit" className="auth-submit" disabled={isLoading}>
-            {isLoading ? "Connexion..." : "Se connecter"}
+            {isLoading ? t("auth.loggingIn") : t("auth.loginButton")}
           </button>
         </form>
 
         <p className="auth-switch">
-          Pas encore de compte ? <Link to="/register">Inscris-toi</Link>
+          {t("auth.noAccount")} <Link to="/register">{t("auth.signUp")}</Link>
         </p>
       </div>
     </div>

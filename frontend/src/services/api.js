@@ -15,7 +15,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 401) {
+        const isAuthRequest =
+            error.config?.url?.includes('/login') ||
+            error.config?.url?.includes('/register');
+
+        if (error.response?.status === 401 && !isAuthRequest) {
             const refreshToken = localStorage.getItem('refresh_token');
             if (refreshToken) {
                 try {
@@ -26,6 +30,7 @@ api.interceptors.response.use(
                     error.config.headers.Authorization = `Bearer ${data.token}`;
                     return axios(error.config);
                 } catch (refreshError) {
+                    console.error('Échec du rafraîchissement du token :', refreshError);
                     localStorage.removeItem('token');
                     localStorage.removeItem('refresh_token');
                     window.location.href = '/login';
@@ -34,6 +39,7 @@ api.interceptors.response.use(
                 window.location.href = '/login';
             }
         }
+
         return Promise.reject(error);
     }
 );
