@@ -134,4 +134,68 @@ final class UserController extends AbstractController
 
         return $this->json(['message' => 'Password updated successfully']);
     }
+
+    #[Route('/api/user', name: 'app_api_user_delete', methods: ['DELETE'])]
+    public function deleteAccount(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        UserPasswordHasherInterface $passwordHasher
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['password'])) {
+            return $this->json(['error' => 'Password is required to confirm account deletion'], 400);
+        }
+
+        if (!$passwordHasher->isPasswordValid($user, $data['password'])) {
+            return $this->json(['error' => 'Incorrect password'], 400);
+        }
+
+        $userId = $user->getId();
+        $userIdentifier = $user->getUserIdentifier();
+
+        $connection = $entityManager->getConnection();
+        $connection->beginTransaction();
+
+        try {
+            // Ordre important : on supprime d'abord ce qui référence Session/Analysis,
+            // puis Session/Analysis eux-mêmes, avant de pouvoir supprimer l'utilisateur.
+            $entityManager->createQuery('DELETE FROM App\Entity\Notification n WHERE n.user = :userId')
+                ->setParameter('userId', $userId)
+                ->execute();
+
+            $entityManager->createQuery('DELETE FROM App\Entity\Analysis a WHERE a.user = :userId')
+                ->setParameter('userId', $userId)
+                ->execute();
+
+            $entityManager->createQuery('DELETE FROM App\Entity\Session s WHERE s.user = :userId')
+                ->setParameter('userId', $userId)
+                ->execute();
+
+            $entityManager->createQuery('DELETE FROM App\Entity\Integration i WHERE i.user = :userId')
+                ->setParameter('userId', $userId)
+                ->execute();
+
+            $entityManager->createQuery('DELETE FROM App\Entity\RefreshToken rt WHERE rt.username = :username')
+                ->setParameter('username', $userIdentifier)
+                ->execute();
+
+            $entityManager->remove($user);
+            $entityManager->flush();
+
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            return $this->json(['error' => 'Failed to delete account: ' . $e->getMessage()], 500);
+        }
+
+        return $this->json(['message' => 'Account deleted successfully']);
+    }
 }

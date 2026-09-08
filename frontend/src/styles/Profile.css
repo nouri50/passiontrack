@@ -103,6 +103,34 @@
     border-color: var(--accent-start);
 }
 
+.profile-password-wrapper {
+    position: relative;
+    display: flex;
+}
+
+.profile-password-wrapper input {
+    flex: 1;
+    padding-right: 40px;
+}
+
+.profile-password-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    line-height: 1;
+    color: var(--text-secondary);
+}
+
+.profile-password-toggle:hover {
+    color: var(--text-primary);
+}
+
 .profile-error {
     color: var(--color-error);
     font-size: 13px;
@@ -128,6 +156,41 @@
 }
 
 .profile-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.profile-danger-zone {
+    border-color: var(--color-error);
+}
+
+.profile-danger-title {
+    color: var(--color-error) !important;
+}
+
+.profile-danger-warning {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0 0 20px;
+}
+
+.profile-delete-btn {
+    align-self: flex-start;
+    background: var(--color-error);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.profile-delete-btn:hover {
+    opacity: 0.9;
+}
+
+.profile-delete-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }

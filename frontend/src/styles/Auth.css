@@ -58,6 +58,34 @@
     border-color: var(--accent-start);
 }
 
+.auth-password-wrapper {
+    position: relative;
+    display: flex;
+}
+
+.auth-password-wrapper input {
+    flex: 1;
+    padding-right: 40px;
+}
+
+.auth-password-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    line-height: 1;
+    color: var(--text-secondary);
+}
+
+.auth-password-toggle:hover {
+    color: var(--text-primary);
+}
+
 .auth-error {
     color: var(--color-error);
     font-size: 13px;

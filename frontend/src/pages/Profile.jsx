@@ -1,9 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useAuthStore from "../stores/authStore";
 import useToastStore from "../stores/toastStore";
-import { updateProfile, updatePassword } from "../services/userService";
+import {
+  updateProfile,
+  updatePassword,
+  deleteAccount,
+} from "../services/userService";
+import ConfirmModal from "../components/ConfirmModal";
 import "../styles/Profile.css";
+import "../styles/ConfirmModal.css";
 
 function initials(user) {
   const source = user?.first_name || user?.username || "?";
@@ -12,7 +19,8 @@ function initials(user) {
 
 function Profile() {
   const { t } = useTranslation();
-  const { user, fetchUser } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, fetchUser, logout } = useAuthStore();
   const addToast = useToastStore((state) => state.addToast);
 
   const [firstName, setFirstName] = useState(user?.first_name || "");
@@ -24,6 +32,15 @@ function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
@@ -76,6 +93,35 @@ function Profile() {
       );
     } finally {
       setPasswordSubmitting(false);
+    }
+  };
+
+  const handleDeleteFormSubmit = (e) => {
+    e.preventDefault();
+
+    if (!deletePassword) {
+      addToast(t("profile.errorPasswordRequired"), "error");
+      return;
+    }
+
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    setShowDeleteModal(false);
+    setIsDeleting(true);
+
+    try {
+      await deleteAccount({ password: deletePassword });
+      addToast(t("profile.successDeleted"), "success");
+      logout();
+      navigate("/login");
+    } catch (err) {
+      addToast(
+        err.response?.data?.error || t("profile.errorDeleting"),
+        "error",
+      );
+      setIsDeleting(false);
     }
   };
 
@@ -144,37 +190,79 @@ function Profile() {
             <label htmlFor="current_password">
               {t("profile.currentPassword")}
             </label>
-            <input
-              id="current_password"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
+            <div className="profile-password-wrapper">
+              <input
+                id="current_password"
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="profile-password-toggle"
+                onClick={() => setShowCurrentPassword((prev) => !prev)}
+                aria-label={
+                  showCurrentPassword
+                    ? t("auth.hidePassword")
+                    : t("auth.showPassword")
+                }
+              >
+                {showCurrentPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           <div className="profile-row">
             <div className="profile-field">
               <label htmlFor="new_password">{t("profile.newPassword")}</label>
-              <input
-                id="new_password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
+              <div className="profile-password-wrapper">
+                <input
+                  id="new_password"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="profile-password-toggle"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  aria-label={
+                    showNewPassword
+                      ? t("auth.hidePassword")
+                      : t("auth.showPassword")
+                  }
+                >
+                  {showNewPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
             <div className="profile-field">
               <label htmlFor="confirm_password">
                 {t("auth.confirmPassword")}
               </label>
-              <input
-                id="confirm_password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
+              <div className="profile-password-wrapper">
+                <input
+                  id="confirm_password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="profile-password-toggle"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={
+                    showConfirmPassword
+                      ? t("auth.hidePassword")
+                      : t("auth.showPassword")
+                  }
+                >
+                  {showConfirmPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -189,6 +277,62 @@ function Profile() {
           </button>
         </form>
       </div>
+
+      <div className="profile-card profile-danger-zone">
+        <h2 className="profile-danger-title">{t("profile.dangerZone")}</h2>
+        <p className="profile-danger-warning">
+          {t("profile.deleteAccountWarning")}
+        </p>
+
+        <form onSubmit={handleDeleteFormSubmit} className="profile-form">
+          <div className="profile-field">
+            <label htmlFor="delete_password">
+              {t("profile.deleteAccountPasswordLabel")}
+            </label>
+            <div className="profile-password-wrapper">
+              <input
+                id="delete_password"
+                type={showDeletePassword ? "text" : "password"}
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="profile-password-toggle"
+                onClick={() => setShowDeletePassword((prev) => !prev)}
+                aria-label={
+                  showDeletePassword
+                    ? t("auth.hidePassword")
+                    : t("auth.showPassword")
+                }
+              >
+                {showDeletePassword ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="profile-delete-btn"
+            disabled={isDeleting}
+          >
+            {isDeleting
+              ? t("profile.deleting")
+              : t("profile.deleteAccountButton")}
+          </button>
+        </form>
+      </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title={t("profile.deleteAccountModalTitle")}
+        message={t("profile.deleteAccountConfirm")}
+        confirmLabel={t("profile.deleteAccountButton")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => setShowDeleteModal(false)}
+        danger
+      />
     </div>
   );
 }
