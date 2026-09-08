@@ -21,7 +21,12 @@
         "noAccount": "Don't have an account yet?",
         "hasAccount": "Already have an account?",
         "signUp": "Sign up",
-        "signIn": "Sign in"
+        "signIn": "Sign in",
+        "loginError": "Incorrect email or password",
+        "loggingIn": "Signing in...",
+        "loginSuccess": "Login successful!",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password"
     },
     "dashboard": {
         "welcome": "Welcome",
@@ -86,7 +91,6 @@
         "successCreated": "Session created successfully!",
         "errorGeneric": "Error creating session."
     },
-
     "sessionEdit": {
         "title": "Edit session",
         "loadError": "Unable to load this session.",
@@ -95,8 +99,6 @@
         "submitting": "Saving...",
         "submit": "Save changes"
     },
-
-
     "sessionDetail": {
         "notFound": "Session not found.",
         "backToSessions": "Back to sessions",
@@ -112,7 +114,7 @@
         "noAnalysis": "No analysis for this session.",
         "analyzeSession": "Analyze this session"
     },
-     "categories": {
+    "categories": {
         "errorNameRequired": "Category name is required.",
         "successUpdated": "Category updated.",
         "successCreated": "Category created successfully.",
@@ -146,39 +148,58 @@
         "subcategoriesCount_one": "{{count}} subcategory",
         "subcategoriesCount_other": "{{count}} subcategories"
     },
-"analytics": {
-    "noData": "No data to analyze yet.",
-    "subtitle": "Overview of your progress",
-    "totalTime": "Total time",
-    "avgDuration": "Average duration",
-    "breakdown": "Breakdown by category",
-    "sessionsCount_one": "{{count}} session",
-    "sessionsCount_other": "{{count}} sessions"
-},
-"profile": {
-    "title": "My profile",
-    "avatarComingSoon": "Avatar customization is coming soon.",
-    "personalInfo": "Personal information",
-    "firstName": "First name",
-    "lastName": "Last name",
-    "changePassword": "Change password",
-    "currentPassword": "Current password",
-    "newPassword": "New password",
-    "updating": "Updating...",
-    "successProfileUpdated": "Profile updated successfully.",
-    "errorProfileUpdate": "Error updating profile.",
-    "errorPasswordTooShort": "The new password must be at least 8 characters long.",
-    "errorPasswordMismatch": "Passwords do not match.",
-    "successPasswordUpdated": "Password updated successfully.",
-    "errorPasswordChange": "Error changing password."
-},
-"notifications": {
-    "allFilter": "All ({{count}})",
-    "unreadFilter": "Unread ({{count}})",
-    "noUnread": "No unread notifications.",
-    "noneYet": "No notifications yet.",
-    "markAsRead": "Mark as read"
-},
+    "analytics": {
+        "noData": "No data to analyze yet.",
+        "subtitle": "Overview of your progress",
+        "totalTime": "Total time",
+        "avgDuration": "Average duration",
+        "breakdown": "Breakdown by category",
+        "sessionsCount_one": "{{count}} session",
+        "sessionsCount_other": "{{count}} sessions"
+    },
+    "profile": {
+        "title": "My profile",
+        "avatarComingSoon": "Avatar customization is coming soon.",
+        "personalInfo": "Personal information",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "changePassword": "Change password",
+        "currentPassword": "Current password",
+        "newPassword": "New password",
+        "updating": "Updating...",
+        "successProfileUpdated": "Profile updated successfully.",
+        "errorProfileUpdate": "Error updating profile.",
+        "errorPasswordTooShort": "The new password must be at least 8 characters long.",
+        "errorPasswordMismatch": "Passwords do not match.",
+        "successPasswordUpdated": "Password updated successfully.",
+        "errorPasswordChange": "Error changing password.",
+        "dangerZone": "Danger zone",
+        "deleteAccountTitle": "Delete my account",
+        "deleteAccountWarning": "This action is irreversible. All your sessions, analyses and notifications will be permanently deleted.",
+        "deleteAccountPasswordLabel": "Confirm with your password",
+        "deleteAccountButton": "Permanently delete my account",
+        "deleteAccountConfirm": "Are you sure you want to delete your account? This action is irreversible.",
+        "deleting": "Deleting...",
+        "successDeleted": "Account deleted.",
+        "errorDeleting": "Error deleting account.",
+        "errorPasswordRequired": "Password is required to confirm deletion.",
+        "deleteAccountModalTitle": "Confirm deletion"
+    },
+    "notifications": {
+        "allFilter": "All ({{count}})",
+        "unreadFilter": "Unread ({{count}})",
+        "noUnread": "No unread notifications.",
+        "noneYet": "No notifications yet.",
+        "markAsRead": "Mark as read"
+    },
+    "register": {
+        "subtitle": "Start tracking your passions with PassionTrack.",
+        "confirmPasswordLabel": "Confirm password",
+        "errorPasswordTooShort": "Password must be at least 8 characters long.",
+        "errorGeneric": "Unable to create your account. Check your information and try again.",
+        "creatingAccount": "Creating account…",
+        "successCreated": "Account created successfully!"
+    },
     "common": {
         "loading": "Loading...",
         "save": "Save",
