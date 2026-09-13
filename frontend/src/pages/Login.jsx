@@ -23,8 +23,14 @@ function Login() {
       await login(email, password);
       addToast(t("auth.loginSuccess"), "success");
       navigate("/dashboard");
-    } catch {
-      addToast(t("auth.loginError"), "error");
+    } catch (err) {
+      if (!err.response) {
+        addToast(t("auth.networkError"), "error");
+      } else if (err.response.status === 401) {
+        addToast(t("auth.loginError"), "error");
+      } else {
+        addToast(t("auth.serverError"), "error");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +78,10 @@ function Login() {
               </button>
             </div>
           </div>
+
+          <p className="auth-forgot-link">
+            <Link to="/forgot-password">{t("auth.forgotPasswordLink")}</Link>
+          </p>
 
           <button type="submit" className="auth-submit" disabled={isLoading}>
             {isLoading ? t("auth.loggingIn") : t("auth.loginButton")}
