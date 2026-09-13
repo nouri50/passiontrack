@@ -6,6 +6,8 @@ import {
   getSessionAnalysis,
   triggerAnalysis,
 } from "../services/analysisService";
+import useToastStore from "../stores/toastStore";
+import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/SessionDetail.css";
 
 function formatKey(key) {
@@ -27,6 +29,7 @@ function SessionDetail() {
   const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const { id } = useParams();
   const navigate = useNavigate();
+  const addToast = useToastStore((state) => state.addToast);
   const [session, setSession] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [analysisMissing, setAnalysisMissing] = useState(false);
@@ -62,7 +65,10 @@ function SessionDetail() {
       setAnalysis(result);
       setAnalysisMissing(false);
     } catch (err) {
-      console.error(err);
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.errorAnalyzing"),
+        "error",
+      );
     } finally {
       setAnalysisLoading(false);
     }
@@ -72,9 +78,13 @@ function SessionDetail() {
     if (!confirm(t("sessionDetail.deleteConfirm"))) return;
     try {
       await deleteSession(id);
+      addToast(t("sessionDetail.successDeleted"), "success");
       navigate("/sessions");
     } catch (err) {
-      console.error(err);
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.errorDeleting"),
+        "error",
+      );
     }
   };
 
