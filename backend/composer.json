@@ -18,6 +18,8 @@
         "symfony/flex": "^2",
         "symfony/framework-bundle": "8.0.*",
         "symfony/http-client": "8.0.*",
+        "symfony/mailer": "8.0.*",
+        "symfony/monolog-bundle": "^4.1",
         "symfony/property-access": "8.0.*",
         "symfony/property-info": "8.0.*",
         "symfony/runtime": "8.0.*",
@@ -82,6 +84,7 @@
         "lexik/jwt-authentication-bundle": "^3.2",
         "nelmio/cors-bundle": "^2.6",
         "symfony/maker-bundle": "^1.67",
-        "symfony/security-bundle": "8.0.*"
+        "symfony/security-bundle": "8.0.*",
+        "symfony/web-profiler-bundle": "8.0.*"
     }
 }

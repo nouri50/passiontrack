@@ -26,7 +26,10 @@
         "loggingIn": "Connexion...",
         "loginSuccess": "Connexion réussie !",
         "showPassword": "Afficher le mot de passe",
-        "hidePassword": "Masquer le mot de passe"
+        "hidePassword": "Masquer le mot de passe",
+        "networkError": "Impossible de contacter le serveur. Vérifiez votre connexion.",
+        "serverError": "Une erreur est survenue côté serveur. Réessaie plus tard.",
+        "forgotPasswordLink": "Mot de passe oublié ?"
     },
     "dashboard": {
         "welcome": "Bienvenue",
@@ -112,7 +115,10 @@
         "weaknesses": "Points faibles",
         "tips": "Conseils",
         "noAnalysis": "Aucune analyse pour cette session.",
-        "analyzeSession": "Analyser cette session"
+        "analyzeSession": "Analyser cette session",
+        "successDeleted": "Session supprimée.",
+        "errorDeleting": "Erreur lors de la suppression de la session.",
+        "errorAnalyzing": "Erreur lors du lancement de l'analyse."
     },
     "categories": {
         "errorNameRequired": "Le nom de la catégorie est obligatoire.",
@@ -200,6 +206,34 @@
         "creatingAccount": "Création du compte…",
         "successCreated": "Compte créé avec succès !"
     },
+    "errors": {
+        "generic": "Une erreur est survenue. Réessaie plus tard.",
+        "CATEGORY_NOT_FOUND": "Catégorie introuvable",
+        "CATEGORY_MISSING_FIELDS": "Champs requis manquants : nom, slug",
+        "CATEGORY_SLUG_EXISTS": "Une catégorie avec ce slug existe déjà",
+        "NOT_AUTHENTICATED": "Vous devez être connecté pour effectuer cette action",
+        "EMAIL_ALREADY_IN_USE": "Cet email est déjà utilisé",
+        "USER_MISSING_PASSWORD_FIELDS": "Champs requis manquants : mot de passe actuel, nouveau mot de passe",
+        "CURRENT_PASSWORD_INCORRECT": "Le mot de passe actuel est incorrect",
+        "PASSWORD_TOO_SHORT": "Le nouveau mot de passe doit contenir au moins 8 caractères",
+        "PASSWORD_REQUIRED_FOR_DELETION": "Le mot de passe est requis pour confirmer la suppression du compte",
+        "INCORRECT_PASSWORD": "Mot de passe incorrect",
+        "ACCOUNT_DELETION_FAILED": "La suppression du compte a échoué",
+        "SESSION_MISSING_FIELDS": "Champs requis manquants : catégorie, titre, date de début, date de fin",
+        "ACCESS_DENIED": "Accès refusé",
+        "SESSION_NOT_FOUND": "Session introuvable",
+        "ANALYSIS_ALREADY_EXISTS": "Une analyse existe déjà pour cette session",
+        "AI_ANALYSIS_FAILED": "L'analyse IA a échoué",
+        "ANALYSIS_NOT_FOUND": "Analyse introuvable",
+        "NO_ANALYSIS_FOUND": "Aucune analyse trouvée pour cette session",
+        "REGISTER_MISSING_FIELDS": "Champs requis manquants : email, nom d'utilisateur, mot de passe",
+        "USERNAME_ALREADY_TAKEN": "Ce nom d'utilisateur est déjà pris",
+        "NOTIFICATION_NOT_FOUND": "Notification introuvable",
+        "INVALID_OR_EXPIRED_RESET_TOKEN": "Ce lien de réinitialisation est invalide ou a expiré. Demande-en un nouveau.",
+        "FORGOT_PASSWORD_MISSING_EMAIL": "Merci de renseigner ton email.",
+        "RESET_PASSWORD_MISSING_FIELDS": "Champs requis manquants : jeton, nouveau mot de passe.",
+        "EMAIL_SEND_FAILED": "L'envoi de l'email a échoué. Vérifie la configuration SMTP."
+    },
     "common": {
         "loading": "Chargement...",
         "save": "Enregistrer",
@@ -207,5 +241,29 @@
         "delete": "Supprimer",
         "edit": "Modifier",
         "create": "Créer"
+    },
+    "forgotPassword": {
+        "title": "Mot de passe oublié",
+        "subtitle": "Entre ton email, on t'envoie un lien pour le réinitialiser.",
+        "emailLabel": "Email",
+        "submitButton": "Envoyer le lien",
+        "sending": "Envoi...",
+        "successMessage": "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé. Vérifie ta boîte mail (et tes spams).",
+        "backToLogin": "Retour à la connexion"
+    },
+    "resetPassword": {
+        "title": "Nouveau mot de passe",
+        "subtitle": "Choisis un nouveau mot de passe pour ton compte.",
+        "newPasswordLabel": "Nouveau mot de passe",
+        "confirmPasswordLabel": "Confirmer le mot de passe",
+        "submitButton": "Réinitialiser le mot de passe",
+        "submitting": "Réinitialisation...",
+        "successMessage": "Mot de passe réinitialisé. Tu peux te connecter.",
+        "errorPasswordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+        "errorPasswordMismatch": "Les mots de passe ne correspondent pas.",
+        "errorGeneric": "Impossible de réinitialiser le mot de passe. Réessaie.",
+        "missingTokenTitle": "Lien invalide",
+        "missingTokenMessage": "Ce lien de réinitialisation est invalide ou incomplet.",
+        "requestNewLink": "Demander un nouveau lien"
     }
 }
