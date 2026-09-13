@@ -27,7 +27,7 @@ final class CategoryController extends AbstractController
         $category = $entityManager->getRepository(Category::class)->find($id);
 
         if (!$category) {
-            return $this->json(['error' => 'Category not found'], 404);
+            return $this->json(['error' => 'CATEGORY_NOT_FOUND'], 404);
         }
 
         return $this->json($this->serializeCategory($category));
@@ -39,12 +39,12 @@ final class CategoryController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['name'], $data['slug'])) {
-            return $this->json(['error' => 'Missing required fields: name, slug'], 400);
+            return $this->json(['error' => 'CATEGORY_MISSING_FIELDS'], 400);
         }
 
         $existing = $entityManager->getRepository(Category::class)->findOneBy(['slug' => $data['slug']]);
         if ($existing) {
-            return $this->json(['error' => 'A category with this slug already exists'], 409);
+            return $this->json(['error' => 'CATEGORY_SLUG_EXISTS'], 409);
         }
 
         $category = new Category();
@@ -70,7 +70,7 @@ final class CategoryController extends AbstractController
         $category = $entityManager->getRepository(Category::class)->find($id);
 
         if (!$category) {
-            return $this->json(['error' => 'Category not found'], 404);
+            return $this->json(['error' => 'CATEGORY_NOT_FOUND'], 404);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -81,7 +81,7 @@ final class CategoryController extends AbstractController
         if (isset($data['slug']) && $data['slug'] !== $category->getSlug()) {
             $existing = $entityManager->getRepository(Category::class)->findOneBy(['slug' => $data['slug']]);
             if ($existing) {
-                return $this->json(['error' => 'A category with this slug already exists'], 409);
+                return $this->json(['error' => 'CATEGORY_SLUG_EXISTS'], 409);
             }
             $category->setSlug($data['slug']);
         }
@@ -114,7 +114,7 @@ final class CategoryController extends AbstractController
         $category = $entityManager->getRepository(Category::class)->find($id);
 
         if (!$category) {
-            return $this->json(['error' => 'Category not found'], 404);
+            return $this->json(['error' => 'CATEGORY_NOT_FOUND'], 404);
         }
 
         // Soft delete : on désactive plutôt que de supprimer (évite de casser les sessions existantes)

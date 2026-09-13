@@ -7,6 +7,7 @@ import {
   deleteCategory,
 } from "../services/categoryService";
 import useToastStore from "../stores/toastStore";
+import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/Categories.css";
 
 function slugify(name) {
@@ -178,10 +179,7 @@ function Categories() {
       resetForm();
       await loadCategories();
     } catch (err) {
-      addToast(
-        err.response?.data?.error || t("categories.errorSaving"),
-        "error",
-      );
+      addToast(getApiErrorMessage(err, t, "categories.errorSaving"), "error");
     } finally {
       setIsSubmitting(false);
     }

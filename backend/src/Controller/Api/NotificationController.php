@@ -18,7 +18,7 @@ final class NotificationController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         $notifications = $entityManager->getRepository(Notification::class)->findBy(
@@ -40,11 +40,11 @@ final class NotificationController extends AbstractController
         $notification = $entityManager->getRepository(Notification::class)->find($id);
 
         if (!$notification) {
-            return $this->json(['error' => 'Notification not found'], 404);
+            return $this->json(['error' => 'NOTIFICATION_NOT_FOUND'], 404);
         }
 
         if ($notification->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         $notification->setIsRead(true);
@@ -64,11 +64,11 @@ final class NotificationController extends AbstractController
         $notification = $entityManager->getRepository(Notification::class)->find($id);
 
         if (!$notification) {
-            return $this->json(['error' => 'Notification not found'], 404);
+            return $this->json(['error' => 'NOTIFICATION_NOT_FOUND'], 404);
         }
 
         if ($notification->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         $entityManager->remove($notification);

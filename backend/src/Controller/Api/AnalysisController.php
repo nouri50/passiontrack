@@ -27,24 +27,27 @@ final class AnalysisController extends AbstractController
         $session = $entityManager->getRepository(Session::class)->find($sessionId);
 
         if (!$session) {
-            return $this->json(['error' => 'Session not found'], 404);
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
         }
 
         if ($session->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         $existing = $entityManager->getRepository(Analysis::class)->findOneBy(['session' => $session]);
         if ($existing) {
-            return $this->json(['error' => 'Analysis already exists for this session', 'analysis_id' => $existing->getId()], 409);
+            return $this->json(['error' => 'ANALYSIS_ALREADY_EXISTS', 'analysis_id' => $existing->getId()], 409);
         }
 
         $prompt = $promptGenerator->generate($session);
 
+        file_put_contents(__DIR__ . '/../../../var/last_ai_prompt.txt', $prompt);
+
         try {
             $result = $aiProvider->analyze($prompt);
         } catch (\Throwable $e) {
-            return $this->json(['error' => 'AI analysis failed: ' . $e->getMessage()], 502);
+            error_log('AI analysis failed: ' . $e->getMessage());
+            return $this->json(['error' => 'AI_ANALYSIS_FAILED'], 502);
         }
 
         // Garde-fou déterministe : si le score de la session est au maximum,
@@ -79,11 +82,11 @@ final class AnalysisController extends AbstractController
         $analysis = $entityManager->getRepository(Analysis::class)->find($id);
 
         if (!$analysis) {
-            return $this->json(['error' => 'Analysis not found'], 404);
+            return $this->json(['error' => 'ANALYSIS_NOT_FOUND'], 404);
         }
 
         if ($analysis->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         return $this->json($this->serializeAnalysis($analysis));
@@ -98,17 +101,17 @@ final class AnalysisController extends AbstractController
         $session = $entityManager->getRepository(Session::class)->find($sessionId);
 
         if (!$session) {
-            return $this->json(['error' => 'Session not found'], 404);
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
         }
 
         if ($session->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         $analysis = $entityManager->getRepository(Analysis::class)->findOneBy(['session' => $session]);
 
         if (!$analysis) {
-            return $this->json(['error' => 'No analysis found for this session'], 404);
+            return $this->json(['error' => 'NO_ANALYSIS_FOUND'], 404);
         }
 
         return $this->json($this->serializeAnalysis($analysis));

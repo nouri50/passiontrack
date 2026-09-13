@@ -9,6 +9,7 @@ import {
   deleteAccount,
 } from "../services/userService";
 import ConfirmModal from "../components/ConfirmModal";
+import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/Profile.css";
 import "../styles/ConfirmModal.css";
 
@@ -56,7 +57,7 @@ function Profile() {
       addToast(t("profile.successProfileUpdated"), "success");
     } catch (err) {
       addToast(
-        err.response?.data?.error || t("profile.errorProfileUpdate"),
+        getApiErrorMessage(err, t, "profile.errorProfileUpdate"),
         "error",
       );
     } finally {
@@ -88,7 +89,7 @@ function Profile() {
       setConfirmPassword("");
     } catch (err) {
       addToast(
-        err.response?.data?.error || t("profile.errorPasswordChange"),
+        getApiErrorMessage(err, t, "profile.errorPasswordChange"),
         "error",
       );
     } finally {
@@ -117,10 +118,7 @@ function Profile() {
       logout();
       navigate("/login");
     } catch (err) {
-      addToast(
-        err.response?.data?.error || t("profile.errorDeleting"),
-        "error",
-      );
+      addToast(getApiErrorMessage(err, t, "profile.errorDeleting"), "error");
       setIsDeleting(false);
     }
   };
