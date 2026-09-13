@@ -22,7 +22,7 @@ final class SessionController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         $qb = $entityManager->getRepository(Session::class)->createQueryBuilder('s')
@@ -51,11 +51,11 @@ final class SessionController extends AbstractController
         $session = $entityManager->getRepository(Session::class)->find($id);
 
         if (!$session) {
-            return $this->json(['error' => 'Session not found'], 404);
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
         }
 
         if ($session->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         return $this->json($this->serializeSession($session));
@@ -71,18 +71,18 @@ final class SessionController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['category_id'], $data['title'], $data['date_start'], $data['date_end'])) {
-            return $this->json(['error' => 'Missing required fields: category_id, title, date_start, date_end'], 400);
+            return $this->json(['error' => 'SESSION_MISSING_FIELDS'], 400);
         }
 
         $category = $entityManager->getRepository(Category::class)->find($data['category_id']);
         if (!$category) {
-            return $this->json(['error' => 'Category not found'], 404);
+            return $this->json(['error' => 'CATEGORY_NOT_FOUND'], 404);
         }
 
         $session = new Session();
@@ -128,11 +128,11 @@ final class SessionController extends AbstractController
         $session = $entityManager->getRepository(Session::class)->find($id);
 
         if (!$session) {
-            return $this->json(['error' => 'Session not found'], 404);
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
         }
 
         if ($session->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -150,7 +150,7 @@ final class SessionController extends AbstractController
         if (isset($data['category_id'])) {
             $category = $entityManager->getRepository(Category::class)->find($data['category_id']);
             if (!$category) {
-                return $this->json(['error' => 'Category not found'], 404);
+                return $this->json(['error' => 'CATEGORY_NOT_FOUND'], 404);
             }
             $session->setCategory($category);
         }
@@ -209,12 +209,23 @@ final class SessionController extends AbstractController
         $session = $entityManager->getRepository(Session::class)->find($id);
 
         if (!$session) {
-            return $this->json(['error' => 'Session not found'], 404);
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
         }
 
         if ($session->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
         }
+
+        // Depuis l'ajout des contraintes FK (migration Version20260913133022),
+        // il faut supprimer ce qui référence la session avant la session elle-même,
+        // même logique que UserController::deleteAccount().
+        $entityManager->createQuery('DELETE FROM App\Entity\Notification n WHERE n.related_session = :session')
+            ->setParameter('session', $session)
+            ->execute();
+
+        $entityManager->createQuery('DELETE FROM App\Entity\Analysis a WHERE a.session = :session')
+            ->setParameter('session', $session)
+            ->execute();
 
         $entityManager->remove($session);
         $entityManager->flush();
