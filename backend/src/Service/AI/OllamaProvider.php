@@ -19,6 +19,13 @@ class OllamaProvider implements AIProviderInterface
                 'prompt' => $prompt,
                 'stream' => false,
                 'format' => 'json',
+                'options' => [
+                    // Sans ce paramètre, Ollama utilise sa valeur par défaut (souvent
+                    // 2048 tokens), largement insuffisante pour nos prompts (~1800-2500
+                    // tokens rien que pour l'entrée, avant la réponse à générer).
+                    // Mistral 7B supporte nativement au moins 8192 tokens.
+                    'num_ctx' => 8192,
+                ],
             ],
             'timeout' => 60,
         ]);

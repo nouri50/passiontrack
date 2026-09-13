@@ -19,8 +19,8 @@ class PromptGenerator
         $notes = $session->getNotes();
 
         $historyContext = $this->buildHistoryContext($session, $category);
-        $referenceContext = $this->buildReferenceContext($category, $data);
         $technicalIncident = $this->getTechnicalIncident($data);
+        $referenceContext = $this->buildReferenceContext($category, $data, $technicalIncident);
 
         $basePrompt = match ($category) {
             'aviation' => "Tu es un instructeur de simulation de vol. Analyse cette session de vol : titre \"{$title}\", durée de vol réelle {$duration}s, données détaillées: {$dataJson}.",
@@ -53,7 +53,7 @@ class PromptGenerator
             $basePrompt .= "2. Si et SEULEMENT SI les notes décrivent une panne ou un bug réel : concentre les conseils sur ce souci technique précis sans impacter la note de pilotage.";
         }
 
-        $basePrompt .= " Consigne de cohérence : si le score de la session est de 100 (ou la note maximale), n'invente pas de points faibles artificiels — laisse 'weaknesses' vide ([]) ou indique 'Aucun point faible majeur identifié'. Vérifie aussi la cohérence physique de tes conseils avant de les donner : ne suggère jamais une action qui aggraverait le problème identifié (par exemple, ne recommande pas d'augmenter la vitesse ou la pente de descente pour réduire un Landing Rate déjà élevé, puisque cela l'empirerait — la bonne recommandation serait de réduire la vitesse verticale plus tôt dans l'approche).";
+        $basePrompt .= " Consigne de cohérence : si le score de la session est de 100 (ou la note maximale), n'invente pas de points faibles artificiels — laisse 'weaknesses' vide ([]) ou indique 'Aucun point faible majeur identifié'. N'invente jamais de point faible générique du type « données non fournies » ou « informations manquantes » : l'absence de donnée n'est pas une faiblesse de pilotage. N'utilise aucun terme technique qui n'existe pas dans le vocabulaire aéronautique standard (par exemple, n'invente pas un terme comme « raccords d'altitude »). Vérifie aussi la cohérence physique de tes conseils avant de les donner : ne suggère jamais une action qui aggraverait le problème identifié (par exemple, ne recommande pas d'augmenter la vitesse ou la pente de descente pour réduire un Landing Rate déjà élevé, puisque cela l'empirerait — la bonne recommandation serait de réduire la vitesse verticale plus tôt dans l'approche).";
 
         return $basePrompt . " Réponds UNIQUEMENT en JSON valide, ENTIÈREMENT EN FRANÇAIS (tous les textes doivent être en français, pas d'anglais), avec cette structure exacte : "
             . '{"strengths": ["point fort 1", "point fort 2"], "weaknesses": ["point faible 1"], '
@@ -103,6 +103,99 @@ class PromptGenerator
         }
 
         return false;
+    }
+
+    private function hadGoAround(array $data): bool
+    {
+        foreach ($data as $key => $value) {
+            $normalizedKey = $this->normalizeKey((string) $key);
+            if (in_array($normalizedKey, ['remisedegaz', 'goaround'], true)) {
+                if (is_bool($value)) {
+                    return $value;
+                }
+                return in_array(strtolower((string) $value), ['true', '1', 'yes', 'oui'], true);
+            }
+        }
+
+        return false;
+    }
+
+    private function getAtcType(array $data): ?string
+    {
+        foreach ($data as $key => $value) {
+            $normalizedKey = $this->normalizeKey((string) $key);
+            if (in_array($normalizedKey, ['typedatc', 'atc'], true)) {
+                return $value !== '' ? (string) $value : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Catégorise la valeur du champ "Type d'ATC" (liste déroulante) en comparant
+     * une égalité STRICTE avec les libellés exacts proposés dans le formulaire.
+     * Volontairement pas de correspondance approximative/mots-clés : une liste
+     * déroulante garantit que la valeur est toujours l'une des options connues,
+     * donc une égalité stricte est fiable — contrairement à du texte libre où
+     * deviner des variantes ("fshud ai traffic control" vu en pratique) est un
+     * jeu perdu d'avance.
+     */
+    private function getAtcCategory(array $data): ?string
+    {
+        $atcType = $this->getAtcType($data);
+        if ($atcType === null) {
+            return null;
+        }
+
+        $normalized = $this->normalizeKey($atcType);
+
+        return match (true) {
+            $normalized === $this->normalizeKey('VATSIM / IVAO (contrôleur réel)') => 'real',
+            $normalized === $this->normalizeKey('FSHud AI Traffic Control') => 'ai_addon',
+            $normalized === $this->normalizeKey('ATC automatique du simulateur') => 'ai_default',
+            $normalized === $this->normalizeKey('Aucun') => 'none',
+            default => null, // valeur non reconnue (ancienne saisie en texte libre par ex.) : on ne devine pas
+        };
+    }
+
+    private function getSituationManagement(array $data): ?string
+    {
+        foreach ($data as $key => $value) {
+            $normalizedKey = $this->normalizeKey((string) $key);
+            if (in_array($normalizedKey, ['gestiondesituation', 'gestiondelasituation'], true)) {
+                return $value !== '' ? (string) $value : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Transmet les critères d'approche (vitesse, altitude d'interception) de façon
+     * purement qualitative. Volontairement AUCUN seuil chiffré de "stabilisation"
+     * n'est calculé ici : ces seuils dépendent trop du type d'appareil et de la
+     * procédure pour être fiables sans référence type par appareil (même logique
+     * de prudence que pour l'hélicoptère dans computeLandingVerdict).
+     */
+    private function extractApproachCriteriaContext(array $data): ?string
+    {
+        $approachSpeed = $this->extractNumericField($data, ["vitesse d'approche"]);
+        $interceptAltitude = $this->extractNumericField($data, ["altitude d'interception"]);
+
+        if ($approachSpeed === null && $interceptAltitude === null) {
+            return null;
+        }
+
+        $parts = [];
+        if ($approachSpeed !== null) {
+            $parts[] = sprintf("vitesse d'approche %.0f kt", $approachSpeed);
+        }
+        if ($interceptAltitude !== null) {
+            $parts[] = sprintf("altitude d'interception %.0f ft", $interceptAltitude);
+        }
+
+        return "CRITÈRES D'APPROCHE DISPONIBLES : " . implode(', ', $parts) . ". Ces valeurs varient énormément selon le type d'appareil et la procédure : N'INVENTE AUCUN seuil chiffré universel de stabilisation. Commente-les uniquement de façon qualitative (gestion de l'énergie, régularité de la capture du plan de descente), en t'appuyant sur la cohérence avec le reste du vol plutôt que sur un chiffre absolu que tu ne peux pas justifier.";
     }
 
     private function extractWeatherContext(array $data): ?string
@@ -207,7 +300,7 @@ class PromptGenerator
         ];
     }
 
-    private function buildReferenceContext(string $category, array $data = []): ?string
+    private function buildReferenceContext(string $category, array $data = [], ?string $technicalIncident = null): ?string
     {
         if ($category !== 'aviation') {
             return null;
@@ -218,7 +311,7 @@ class PromptGenerator
         $weatherContext = $this->extractWeatherContext($data);
 
         $baseContext = "RÈGLES STRICTES DE VOCABULAIRE AÉRONAUTIQUE — À RESPECTER IMPÉRATIVEMENT : "
-            . "1. « Landing Rate » = vitesse verticale à l'impact des roues en ft/min (ce n'est NI du freinage NI du décrochage). "
+            . "1. « Landing Rate » = vitesse verticale à l'impact des roues en ft/min (ce n'est NI du freinage NI du décrochage). INTERDICTION ABSOLUE d'employer les mots « freinage » ou « décélération » pour qualifier le Landing Rate ou la vitesse verticale en général. "
             . "2. « Landing Gforce » = facteur de charge/force d'impact vertical au contact du sol. INTERDICTION ABSOLUE d'employer les mots « freinage », « décélération » ou « virage » pour qualifier le Landing Gforce. "
             . "3. « Block Time » = durée totale parking à parking. « Flight Time » = durée réelle en l'air. ";
 
@@ -251,6 +344,45 @@ class PromptGenerator
                     $verdict['gforce_verdict']
                 );
             }
+        }
+
+        if ($this->hadGoAround($data)) {
+            $baseContext .= " REMISE DE GAZ EFFECTUÉE PENDANT CE VOL : c'est une manœuvre de sécurité standard, PAS un échec. Valorise-la comme un point fort d'airmanship (bonne décision de ne pas forcer un atterrissage sur une approche déstabilisée ou une vitesse excessive), SAUF si les notes de l'utilisateur attribuent explicitement cette remise de gaz à une erreur de pilotage — dans ce cas uniquement, ne la présente pas comme un point fort. Les métriques d'atterrissage analysées ici (Landing Rate, Landing Gforce) concernent l'atterrissage final réussi, pas l'approche interrompue.";
+        }
+
+        $atcCategory = $this->getAtcCategory($data);
+        switch ($atcCategory) {
+            case 'real':
+                $baseContext .= " CONTRÔLE AÉRIEN RÉEL (contrôleur humain, réseau type VATSIM/IVAO) utilisé sur ce vol : cela implique une charge de travail et un réalisme de communication significativement supérieurs à l'ATC automatique. Valorise cette complexité supplémentaire si pertinent dans l'analyse.";
+                break;
+            case 'ai_addon':
+                $baseContext .= " Ce vol utilisait FSHud AI Traffic Control (trafic et contrôle aérien générés par IA, PAS un contrôleur humain réel) : c'est un ATC synthétique plus riche que l'ATC par défaut du simulateur, mais ne le présente jamais comme un contrôleur humain réel.";
+                break;
+            case 'ai_default':
+                $baseContext .= " Ce vol utilisait l'ATC automatique par défaut du simulateur (pas de contrôleur humain réel).";
+                break;
+            case 'none':
+            case null:
+                // Rien à ajouter : soit aucun ATC, soit une valeur non reconnue —
+                // dans les deux cas, mieux vaut ne rien affirmer que de deviner.
+                break;
+        }
+
+        if ($technicalIncident !== null) {
+            $normalizedIncident = $this->normalizeKey($technicalIncident);
+            if (str_contains($normalizedIncident, 'visuel') || str_contains($normalizedIncident, 'manuel')) {
+                $baseContext .= " L'incident technique déclaré a nécessité un passage en navigation/pilotage visuel(le) ou manuel(le) : valorise explicitement cette capacité d'adaptation en temps réel, en plus de ne jamais reprocher au pilote la dégradation liée à cet incident (voir consigne dédiée sur l'incident technique).";
+            }
+        }
+
+        $situationManagement = $this->getSituationManagement($data);
+        if ($situationManagement) {
+            $baseContext .= " GESTION DE SITUATION DÉCRITE PAR L'UTILISATEUR : « {$situationManagement} ». Commente spécifiquement cette gestion de situation dans l'analyse (en point fort si elle a été bien gérée, en conseil si des pistes d'amélioration existent) — c'est un aspect que l'utilisateur juge important pour ce vol.";
+        }
+
+        $approachContext = $this->extractApproachCriteriaContext($data);
+        if ($approachContext) {
+            $baseContext .= " " . $approachContext;
         }
 
         return $baseContext;
