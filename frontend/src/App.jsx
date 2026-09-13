@@ -14,6 +14,8 @@ import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import Categories from "./pages/Categories";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
@@ -55,6 +57,28 @@ function App() {
               <Navigate to="/dashboard" replace />
             ) : (
               <Register />
+            )
+          }
+        />
+
+        <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <ForgotPassword />
+            )
+          }
+        />
+
+        <Route
+          path="/reset-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <ResetPassword />
             )
           }
         />

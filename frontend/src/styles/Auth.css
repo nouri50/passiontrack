@@ -92,6 +92,22 @@
     margin: 0;
 }
 
+.auth-forgot-link {
+    text-align: right;
+    margin: -8px 0 0;
+    font-size: 13px;
+}
+
+.auth-forgot-link a {
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.auth-forgot-link a:hover {
+    color: var(--accent-start);
+    text-decoration: underline;
+}
+
 .auth-submit {
     background: var(--accent-gradient);
     color: #ffffff;

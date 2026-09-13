@@ -26,7 +26,10 @@
         "loggingIn": "Signing in...",
         "loginSuccess": "Login successful!",
         "showPassword": "Show password",
-        "hidePassword": "Hide password"
+        "hidePassword": "Hide password",
+        "networkError": "Unable to reach the server. Check your connection.",
+        "serverError": "A server error occurred. Please try again later.",
+        "forgotPasswordLink": "Forgot password?"
     },
     "dashboard": {
         "welcome": "Welcome",
@@ -112,7 +115,10 @@
         "weaknesses": "Weaknesses",
         "tips": "Tips",
         "noAnalysis": "No analysis for this session.",
-        "analyzeSession": "Analyze this session"
+        "analyzeSession": "Analyze this session",
+        "successDeleted": "Session deleted.",
+        "errorDeleting": "Error deleting session.",
+        "errorAnalyzing": "Error triggering analysis."
     },
     "categories": {
         "errorNameRequired": "Category name is required.",
@@ -200,6 +206,34 @@
         "creatingAccount": "Creating account…",
         "successCreated": "Account created successfully!"
     },
+    "errors": {
+        "generic": "Something went wrong. Please try again later.",
+        "CATEGORY_NOT_FOUND": "Category not found",
+        "CATEGORY_MISSING_FIELDS": "Missing required fields: name, slug",
+        "CATEGORY_SLUG_EXISTS": "A category with this slug already exists",
+        "NOT_AUTHENTICATED": "You must be logged in to perform this action",
+        "EMAIL_ALREADY_IN_USE": "This email is already in use",
+        "USER_MISSING_PASSWORD_FIELDS": "Missing required fields: current password, new password",
+        "CURRENT_PASSWORD_INCORRECT": "Current password is incorrect",
+        "PASSWORD_TOO_SHORT": "New password must be at least 8 characters",
+        "PASSWORD_REQUIRED_FOR_DELETION": "Password is required to confirm account deletion",
+        "INCORRECT_PASSWORD": "Incorrect password",
+        "ACCOUNT_DELETION_FAILED": "Account deletion failed",
+        "SESSION_MISSING_FIELDS": "Missing required fields: category, title, start date, end date",
+        "ACCESS_DENIED": "Access denied",
+        "SESSION_NOT_FOUND": "Session not found",
+        "ANALYSIS_ALREADY_EXISTS": "An analysis already exists for this session",
+        "AI_ANALYSIS_FAILED": "AI analysis failed",
+        "ANALYSIS_NOT_FOUND": "Analysis not found",
+        "NO_ANALYSIS_FOUND": "No analysis found for this session",
+        "REGISTER_MISSING_FIELDS": "Missing required fields: email, username, password",
+        "USERNAME_ALREADY_TAKEN": "Username already taken",
+        "NOTIFICATION_NOT_FOUND": "Notification not found",
+        "INVALID_OR_EXPIRED_RESET_TOKEN": "This reset link is invalid or has expired. Request a new one.",
+        "FORGOT_PASSWORD_MISSING_EMAIL": "Please enter your email.",
+        "RESET_PASSWORD_MISSING_FIELDS": "Missing required fields: token, new password.",
+        "EMAIL_SEND_FAILED": "Failed to send email. Check your SMTP configuration."
+    },
     "common": {
         "loading": "Loading...",
         "save": "Save",
@@ -207,5 +241,29 @@
         "delete": "Delete",
         "edit": "Edit",
         "create": "Create"
+    },
+    "forgotPassword": {
+        "title": "Forgot password",
+        "subtitle": "Enter your email and we'll send you a reset link.",
+        "emailLabel": "Email",
+        "submitButton": "Send link",
+        "sending": "Sending...",
+        "successMessage": "If an account exists for this email, a reset link has just been sent. Check your inbox (and spam folder).",
+        "backToLogin": "Back to login"
+    },
+    "resetPassword": {
+        "title": "New password",
+        "subtitle": "Choose a new password for your account.",
+        "newPasswordLabel": "New password",
+        "confirmPasswordLabel": "Confirm password",
+        "submitButton": "Reset password",
+        "submitting": "Resetting...",
+        "successMessage": "Password reset. You can now log in.",
+        "errorPasswordTooShort": "Password must be at least 8 characters long.",
+        "errorPasswordMismatch": "Passwords do not match.",
+        "errorGeneric": "Unable to reset the password. Please try again.",
+        "missingTokenTitle": "Invalid link",
+        "missingTokenMessage": "This reset link is invalid or incomplete.",
+        "requestNewLink": "Request a new link"
     }
 }
