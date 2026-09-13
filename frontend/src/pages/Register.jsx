@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useAuthStore from "../stores/authStore";
 import useToastStore from "../stores/toastStore";
+import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/Auth.css";
 
 function Register() {
@@ -45,15 +46,10 @@ function Register() {
       addToast(t("register.successCreated"), "success");
       navigate("/dashboard");
     } catch (requestError) {
-      const apiData = requestError.response?.data;
-
-      if (apiData?.error) {
-        addToast(apiData.error, "error");
-      } else if (Array.isArray(apiData?.errors)) {
-        addToast(apiData.errors.join(" "), "error");
-      } else {
-        addToast(t("register.errorGeneric"), "error");
-      }
+      addToast(
+        getApiErrorMessage(requestError, t, "register.errorGeneric"),
+        "error",
+      );
     } finally {
       setIsLoading(false);
     }

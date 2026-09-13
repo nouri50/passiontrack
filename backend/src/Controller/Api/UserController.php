@@ -20,7 +20,7 @@ final class UserController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         return $this->json([
@@ -44,7 +44,7 @@ final class UserController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -68,7 +68,7 @@ final class UserController extends AbstractController
         if (isset($data['email']) && $data['email'] !== $user->getEmail()) {
             $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $data['email']]);
             if ($existingUser) {
-                return $this->json(['error' => 'Email already in use'], 409);
+                return $this->json(['error' => 'EMAIL_ALREADY_IN_USE'], 409);
             }
             $user->setEmail($data['email']);
         }
@@ -109,21 +109,21 @@ final class UserController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['current_password'], $data['new_password'])) {
-            return $this->json(['error' => 'Missing required fields: current_password, new_password'], 400);
+            return $this->json(['error' => 'USER_MISSING_PASSWORD_FIELDS'], 400);
         }
 
         if (!$passwordHasher->isPasswordValid($user, $data['current_password'])) {
-            return $this->json(['error' => 'Current password is incorrect'], 400);
+            return $this->json(['error' => 'CURRENT_PASSWORD_INCORRECT'], 400);
         }
 
         if (strlen($data['new_password']) < 8) {
-            return $this->json(['error' => 'New password must be at least 8 characters'], 400);
+            return $this->json(['error' => 'PASSWORD_TOO_SHORT'], 400);
         }
 
         $hashedPassword = $passwordHasher->hashPassword($user, $data['new_password']);
@@ -145,17 +145,17 @@ final class UserController extends AbstractController
         $user = $this->getUser();
 
         if (!$user) {
-            return $this->json(['error' => 'Not authenticated'], 401);
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
         }
 
         $data = json_decode($request->getContent(), true);
 
         if (!isset($data['password'])) {
-            return $this->json(['error' => 'Password is required to confirm account deletion'], 400);
+            return $this->json(['error' => 'PASSWORD_REQUIRED_FOR_DELETION'], 400);
         }
 
         if (!$passwordHasher->isPasswordValid($user, $data['password'])) {
-            return $this->json(['error' => 'Incorrect password'], 400);
+            return $this->json(['error' => 'INCORRECT_PASSWORD'], 400);
         }
 
         $userId = $user->getId();
@@ -193,7 +193,8 @@ final class UserController extends AbstractController
             $connection->commit();
         } catch (\Throwable $e) {
             $connection->rollBack();
-            return $this->json(['error' => 'Failed to delete account: ' . $e->getMessage()], 500);
+            error_log('Account deletion failed: ' . $e->getMessage());
+            return $this->json(['error' => 'ACCOUNT_DELETION_FAILED'], 500);
         }
 
         return $this->json(['message' => 'Account deleted successfully']);

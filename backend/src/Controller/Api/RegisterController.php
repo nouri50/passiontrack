@@ -24,18 +24,18 @@ final class RegisterController extends AbstractController
 
         if (!isset($data['email'], $data['username'], $data['password'])) {
             return $this->json([
-                'error' => 'Missing required fields: email, username, password'
+                'error' => 'REGISTER_MISSING_FIELDS'
             ], 400);
         }
 
         $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $data['email']]);
         if ($existingUser) {
-            return $this->json(['error' => 'Email already in use'], 409);
+            return $this->json(['error' => 'EMAIL_ALREADY_IN_USE'], 409);
         }
 
         $existingUsername = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
         if ($existingUsername) {
-            return $this->json(['error' => 'Username already taken'], 409);
+            return $this->json(['error' => 'USERNAME_ALREADY_TAKEN'], 409);
         }
 
         $user = new User();

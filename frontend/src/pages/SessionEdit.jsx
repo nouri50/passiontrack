@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { getCategories } from "../services/categoryService";
 import { getSession, updateSession } from "../services/sessionService";
 import useToastStore from "../stores/toastStore";
+import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/SessionForm.css";
 
 function slugifyKey(label) {
@@ -137,12 +138,7 @@ function SessionEdit() {
       addToast(t("sessionEdit.successUpdated"), "success");
       navigate(`/sessions/${id}`);
     } catch (err) {
-      addToast(
-        err.response?.data?.error ||
-          err.response?.data?.errors?.join(", ") ||
-          t("sessionEdit.errorGeneric"),
-        "error",
-      );
+      addToast(getApiErrorMessage(err, t, "sessionEdit.errorGeneric"), "error");
     } finally {
       setIsSubmitting(false);
     }
