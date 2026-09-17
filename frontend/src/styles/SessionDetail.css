@@ -239,3 +239,47 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.session-detail-attachment {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.session-detail-attachment-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.session-detail-attachment-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--accent-start);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.session-detail-attachment-btn:hover {
+    border-color: var(--accent-start);
+    background: rgba(102, 126, 234, 0.08);
+}
+
+.session-detail-attachment-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.session-detail-attachment-btn--danger {
+    color: var(--color-error);
+}
+
+.session-detail-attachment-btn--danger:hover {
+    border-color: var(--color-error);
+    background: transparent;
+}

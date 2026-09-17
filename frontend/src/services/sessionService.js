@@ -24,3 +24,22 @@ export const deleteSession = async (id) => {
     const { data } = await api.delete(`/sessions/${id}`);
     return data;
 };
+
+export const uploadSessionAttachment = async (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post(`/sessions/${id}/attachment`, formData);
+    return data;
+};
+
+export const downloadSessionAttachment = async (id) => {
+    const response = await api.get(`/sessions/${id}/attachment`, {
+        responseType: 'blob',
+    });
+    return response.data;
+};
+
+export const deleteSessionAttachment = async (id) => {
+    const { data } = await api.delete(`/sessions/${id}/attachment`);
+    return data;
+};

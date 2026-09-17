@@ -118,7 +118,19 @@
         "analyzeSession": "Analyze this session",
         "successDeleted": "Session deleted.",
         "errorDeleting": "Error deleting session.",
-        "errorAnalyzing": "Error triggering analysis."
+        "errorAnalyzing": "Error triggering analysis.",
+        "attachmentTitle": "Flight report file",
+        "attachmentUploadLabel": "Import a SimBit report (.xlsx)",
+        "attachmentUploadButton": "Import",
+        "attachmentUploading": "Importing...",
+        "attachmentDownload": "Download file",
+        "attachmentDownloading": "Downloading...",
+        "attachmentDelete": "Delete file",
+        "attachmentDeleteConfirm": "Delete the file attached to this session?",
+        "attachmentUploadSuccess": "File imported successfully.",
+        "attachmentFilledFields": "File imported — auto-filled fields: {{fields}}",
+        "attachmentDeleteSuccess": "File deleted.",
+        "attachmentErrorGeneric": "Error managing the attached file."
     },
     "categories": {
         "errorNameRequired": "Category name is required.",
@@ -232,7 +244,13 @@
         "INVALID_OR_EXPIRED_RESET_TOKEN": "This reset link is invalid or has expired. Request a new one.",
         "FORGOT_PASSWORD_MISSING_EMAIL": "Please enter your email.",
         "RESET_PASSWORD_MISSING_FIELDS": "Missing required fields: token, new password.",
-        "EMAIL_SEND_FAILED": "Failed to send email. Check your SMTP configuration."
+        "EMAIL_SEND_FAILED": "Failed to send email. Check your SMTP configuration.",
+        "ATTACHMENT_MISSING_FILE": "No file provided.",
+        "ATTACHMENT_INVALID_FORMAT": "Unsupported file format (.xlsx only).",
+        "ATTACHMENT_TOO_LARGE": "File is too large (5 MB maximum).",
+        "ATTACHMENT_SAVE_FAILED": "Failed to save the file.",
+        "ATTACHMENT_PARSE_FAILED": "This file doesn't appear to be a valid SimBit export.",
+        "ATTACHMENT_NOT_FOUND": "No file attached to this session."
     },
     "common": {
         "loading": "Loading...",
