@@ -118,7 +118,19 @@
         "analyzeSession": "Analyser cette session",
         "successDeleted": "Session supprimée.",
         "errorDeleting": "Erreur lors de la suppression de la session.",
-        "errorAnalyzing": "Erreur lors du lancement de l'analyse."
+        "errorAnalyzing": "Erreur lors du lancement de l'analyse.",
+        "attachmentTitle": "Fichier de vol",
+        "attachmentUploadLabel": "Importer un rapport SimBit (.xlsx)",
+        "attachmentUploadButton": "Importer",
+        "attachmentUploading": "Import en cours...",
+        "attachmentDownload": "Télécharger le fichier",
+        "attachmentDownloading": "Téléchargement...",
+        "attachmentDelete": "Supprimer le fichier",
+        "attachmentDeleteConfirm": "Supprimer le fichier attaché à cette session ?",
+        "attachmentUploadSuccess": "Fichier importé avec succès.",
+        "attachmentFilledFields": "Fichier importé — champs remplis automatiquement : {{fields}}",
+        "attachmentDeleteSuccess": "Fichier supprimé.",
+        "attachmentErrorGeneric": "Erreur lors de la gestion du fichier attaché."
     },
     "categories": {
         "errorNameRequired": "Le nom de la catégorie est obligatoire.",
@@ -232,7 +244,13 @@
         "INVALID_OR_EXPIRED_RESET_TOKEN": "Ce lien de réinitialisation est invalide ou a expiré. Demande-en un nouveau.",
         "FORGOT_PASSWORD_MISSING_EMAIL": "Merci de renseigner ton email.",
         "RESET_PASSWORD_MISSING_FIELDS": "Champs requis manquants : jeton, nouveau mot de passe.",
-        "EMAIL_SEND_FAILED": "L'envoi de l'email a échoué. Vérifie la configuration SMTP."
+        "EMAIL_SEND_FAILED": "L'envoi de l'email a échoué. Vérifie la configuration SMTP.",
+        "ATTACHMENT_MISSING_FILE": "Aucun fichier fourni.",
+        "ATTACHMENT_INVALID_FORMAT": "Format de fichier non supporté (.xlsx uniquement).",
+        "ATTACHMENT_TOO_LARGE": "Le fichier est trop volumineux (5 Mo maximum).",
+        "ATTACHMENT_SAVE_FAILED": "Échec de l'enregistrement du fichier.",
+        "ATTACHMENT_PARSE_FAILED": "Ce fichier ne semble pas être un export SimBit valide.",
+        "ATTACHMENT_NOT_FOUND": "Aucun fichier attaché à cette session."
     },
     "common": {
         "loading": "Chargement...",

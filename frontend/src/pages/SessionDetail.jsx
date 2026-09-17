@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getSession, deleteSession } from "../services/sessionService";
+import {
+  getSession,
+  deleteSession,
+  uploadSessionAttachment,
+  downloadSessionAttachment,
+  deleteSessionAttachment,
+} from "../services/sessionService";
 import {
   getSessionAnalysis,
   triggerAnalysis,
@@ -36,6 +42,9 @@ function SessionDetail() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [attachmentFile, setAttachmentFile] = useState(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentDownloading, setAttachmentDownloading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -83,6 +92,77 @@ function SessionDetail() {
     } catch (err) {
       addToast(
         getApiErrorMessage(err, t, "sessionDetail.errorDeleting"),
+        "error",
+      );
+    }
+  };
+
+  const handleAttachmentUpload = async (e) => {
+    e.preventDefault();
+    if (!attachmentFile) return;
+
+    setAttachmentUploading(true);
+    try {
+      const result = await uploadSessionAttachment(id, attachmentFile);
+
+      setSession((prev) => ({
+        ...prev,
+        attachment_url: result.attachment_url,
+        data: result.data,
+      }));
+      setAttachmentFile(null);
+
+      if (result.filled_fields && result.filled_fields.length > 0) {
+        addToast(
+          t("sessionDetail.attachmentFilledFields", {
+            fields: result.filled_fields.join(", "),
+          }),
+          "success",
+        );
+      } else {
+        addToast(t("sessionDetail.attachmentUploadSuccess"), "success");
+      }
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.attachmentErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setAttachmentUploading(false);
+    }
+  };
+
+  const handleAttachmentDownload = async () => {
+    setAttachmentDownloading(true);
+    try {
+      const blob = await downloadSessionAttachment(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${session.title || "flight-report"}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.attachmentErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setAttachmentDownloading(false);
+    }
+  };
+
+  const handleAttachmentDelete = async () => {
+    if (!confirm(t("sessionDetail.attachmentDeleteConfirm"))) return;
+    try {
+      await deleteSessionAttachment(id);
+      setSession((prev) => ({ ...prev, attachment_url: null }));
+      addToast(t("sessionDetail.attachmentDeleteSuccess"), "success");
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.attachmentErrorGeneric"),
         "error",
       );
     }
@@ -185,6 +265,55 @@ function SessionDetail() {
           <p className="session-detail-notes">{session.notes}</p>
         </div>
       )}
+
+      <div className="session-detail-section">
+        <h2>{t("sessionDetail.attachmentTitle")}</h2>
+
+        {session.attachment_url ? (
+          <div className="session-detail-attachment">
+            <button
+              type="button"
+              onClick={handleAttachmentDownload}
+              disabled={attachmentDownloading}
+              className="session-detail-attachment-btn"
+            >
+              {attachmentDownloading
+                ? t("sessionDetail.attachmentDownloading")
+                : t("sessionDetail.attachmentDownload")}
+            </button>
+            <button
+              type="button"
+              onClick={handleAttachmentDelete}
+              className="session-detail-attachment-btn session-detail-attachment-btn--danger"
+            >
+              {t("sessionDetail.attachmentDelete")}
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleAttachmentUpload}
+            className="session-detail-attachment"
+          >
+            <label className="session-detail-attachment-label">
+              {t("sessionDetail.attachmentUploadLabel")}
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={(e) => setAttachmentFile(e.target.files[0] ?? null)}
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!attachmentFile || attachmentUploading}
+              className="session-detail-attachment-btn"
+            >
+              {attachmentUploading
+                ? t("sessionDetail.attachmentUploading")
+                : t("sessionDetail.attachmentUploadButton")}
+            </button>
+          </form>
+        )}
+      </div>
 
       <div className="session-detail-section">
         <h2>🤖 {t("dashboard.aiAnalysis")}</h2>
