@@ -8,7 +8,9 @@ import {
 } from "../services/categoryService";
 import useToastStore from "../stores/toastStore";
 import { getApiErrorMessage } from "../utils/apiError";
+import ConfirmModal from "../components/ConfirmModal";
 import "../styles/Categories.css";
+import "../styles/ConfirmModal.css";
 
 function slugify(name) {
   return name
@@ -44,6 +46,7 @@ function Categories() {
   const [newField, setNewField] = useState(emptyNewField);
   const [newSubcategory, setNewSubcategory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deactivateTargetId, setDeactivateTargetId] = useState(null);
 
   const loadCategories = async () => {
     try {
@@ -185,14 +188,22 @@ function Categories() {
     }
   };
 
-  const handleDeactivate = async (id) => {
-    if (!confirm(t("categories.deactivateConfirm"))) return;
+  const handleDeactivateClick = (id) => {
+    setDeactivateTargetId(id);
+  };
+
+  const handleDeactivateConfirmed = async () => {
+    const id = deactivateTargetId;
+    setDeactivateTargetId(null);
     try {
       await deleteCategory(id);
       addToast(t("categories.successDeactivated"), "success");
       await loadCategories();
     } catch (err) {
-      addToast(t("categories.errorDeactivating"), "error");
+      addToast(
+        getApiErrorMessage(err, t, "categories.errorDeactivating"),
+        "error",
+      );
     }
   };
 
@@ -426,7 +437,7 @@ function Categories() {
                     {t("categories.edit")}
                   </button>
                   <button
-                    onClick={() => handleDeactivate(cat.id)}
+                    onClick={() => handleDeactivateClick(cat.id)}
                     className="category-item-btn category-item-btn--danger"
                   >
                     {t("categories.deactivate")}
@@ -449,6 +460,17 @@ function Categories() {
           ))}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={deactivateTargetId !== null}
+        title={t("categories.deactivateModalTitle")}
+        message={t("categories.deactivateConfirm")}
+        confirmLabel={t("categories.deactivate")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleDeactivateConfirmed}
+        onCancel={() => setDeactivateTargetId(null)}
+        danger
+      />
     </div>
   );
 }

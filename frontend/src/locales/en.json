@@ -130,7 +130,9 @@
         "attachmentUploadSuccess": "File imported successfully.",
         "attachmentFilledFields": "File imported — auto-filled fields: {{fields}}",
         "attachmentDeleteSuccess": "File deleted.",
-        "attachmentErrorGeneric": "Error managing the attached file."
+        "attachmentErrorGeneric": "Error managing the attached file.",
+        "deleteModalTitle": "Confirm deletion",
+        "attachmentDeleteModalTitle": "Confirm file deletion"
     },
     "categories": {
         "errorNameRequired": "Category name is required.",
@@ -164,7 +166,8 @@
         "fieldsCount_one": "{{count}} field",
         "fieldsCount_other": "{{count}} fields",
         "subcategoriesCount_one": "{{count}} subcategory",
-        "subcategoriesCount_other": "{{count}} subcategories"
+        "subcategoriesCount_other": "{{count}} subcategories",
+        "deactivateModalTitle": "Confirm deactivation"
     },
     "analytics": {
         "noData": "No data to analyze yet.",

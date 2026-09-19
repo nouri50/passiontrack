@@ -7,6 +7,7 @@ import {
   uploadSessionAttachment,
   downloadSessionAttachment,
   deleteSessionAttachment,
+  getSessionTrace,
 } from "../services/sessionService";
 import {
   getSessionAnalysis,
@@ -14,7 +15,10 @@ import {
 } from "../services/analysisService";
 import useToastStore from "../stores/toastStore";
 import { getApiErrorMessage } from "../utils/apiError";
+import FlightMap from "../components/FlightMap";
+import ConfirmModal from "../components/ConfirmModal";
 import "../styles/SessionDetail.css";
+import "../styles/ConfirmModal.css";
 
 function formatKey(key) {
   return key
@@ -45,6 +49,10 @@ function SessionDetail() {
   const [attachmentFile, setAttachmentFile] = useState(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [attachmentDownloading, setAttachmentDownloading] = useState(false);
+  const [trace, setTrace] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAttachmentDeleteConfirm, setShowAttachmentDeleteConfirm] =
+    useState(false);
 
   useEffect(() => {
     async function load() {
@@ -67,6 +75,28 @@ function SessionDetail() {
     load();
   }, [id]);
 
+  useEffect(() => {
+    if (!session?.attachment_url) {
+      setTrace(null);
+      return;
+    }
+
+    let cancelled = false;
+    getSessionTrace(id)
+      .then((points) => {
+        if (!cancelled) setTrace(points);
+      })
+      .catch(() => {
+        // Pas de toast ici : la carte est un bonus, pas une action demandée
+        // explicitement — un échec silencieux (carte absente) suffit.
+        if (!cancelled) setTrace(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, session?.attachment_url]);
+
   const handleAnalyze = async () => {
     setAnalysisLoading(true);
     try {
@@ -83,8 +113,12 @@ function SessionDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm(t("sessionDetail.deleteConfirm"))) return;
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    setShowDeleteConfirm(false);
     try {
       await deleteSession(id);
       addToast(t("sessionDetail.successDeleted"), "success");
@@ -154,8 +188,12 @@ function SessionDetail() {
     }
   };
 
-  const handleAttachmentDelete = async () => {
-    if (!confirm(t("sessionDetail.attachmentDeleteConfirm"))) return;
+  const handleAttachmentDeleteClick = () => {
+    setShowAttachmentDeleteConfirm(true);
+  };
+
+  const handleAttachmentDeleteConfirmed = async () => {
+    setShowAttachmentDeleteConfirm(false);
     try {
       await deleteSessionAttachment(id);
       setSession((prev) => ({ ...prev, attachment_url: null }));
@@ -206,7 +244,7 @@ function SessionDetail() {
           <Link to={`/sessions/${id}/edit`} className="session-detail-edit">
             {t("sessionDetail.edit")}
           </Link>
-          <button className="session-detail-delete" onClick={handleDelete}>
+          <button className="session-detail-delete" onClick={handleDeleteClick}>
             {t("common.delete")}
           </button>
         </div>
@@ -270,25 +308,28 @@ function SessionDetail() {
         <h2>{t("sessionDetail.attachmentTitle")}</h2>
 
         {session.attachment_url ? (
-          <div className="session-detail-attachment">
-            <button
-              type="button"
-              onClick={handleAttachmentDownload}
-              disabled={attachmentDownloading}
-              className="session-detail-attachment-btn"
-            >
-              {attachmentDownloading
-                ? t("sessionDetail.attachmentDownloading")
-                : t("sessionDetail.attachmentDownload")}
-            </button>
-            <button
-              type="button"
-              onClick={handleAttachmentDelete}
-              className="session-detail-attachment-btn session-detail-attachment-btn--danger"
-            >
-              {t("sessionDetail.attachmentDelete")}
-            </button>
-          </div>
+          <>
+            <div className="session-detail-attachment">
+              <button
+                type="button"
+                onClick={handleAttachmentDownload}
+                disabled={attachmentDownloading}
+                className="session-detail-attachment-btn"
+              >
+                {attachmentDownloading
+                  ? t("sessionDetail.attachmentDownloading")
+                  : t("sessionDetail.attachmentDownload")}
+              </button>
+              <button
+                type="button"
+                onClick={handleAttachmentDeleteClick}
+                className="session-detail-attachment-btn session-detail-attachment-btn--danger"
+              >
+                {t("sessionDetail.attachmentDelete")}
+              </button>
+            </div>
+            {trace && <FlightMap points={trace} />}
+          </>
         ) : (
           <form
             onSubmit={handleAttachmentUpload}
@@ -380,6 +421,28 @@ function SessionDetail() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title={t("sessionDetail.deleteModalTitle")}
+        message={t("sessionDetail.deleteConfirm")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setShowDeleteConfirm(false)}
+        danger
+      />
+
+      <ConfirmModal
+        isOpen={showAttachmentDeleteConfirm}
+        title={t("sessionDetail.attachmentDeleteModalTitle")}
+        message={t("sessionDetail.attachmentDeleteConfirm")}
+        confirmLabel={t("sessionDetail.attachmentDelete")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleAttachmentDeleteConfirmed}
+        onCancel={() => setShowAttachmentDeleteConfirm(false)}
+        danger
+      />
     </div>
   );
 }

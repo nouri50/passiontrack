@@ -43,3 +43,8 @@ export const deleteSessionAttachment = async (id) => {
     const { data } = await api.delete(`/sessions/${id}/attachment`);
     return data;
 };
+
+export const getSessionTrace = async (id) => {
+    const { data } = await api.get(`/sessions/${id}/trace`);
+    return data.points;
+};

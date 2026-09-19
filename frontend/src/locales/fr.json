@@ -130,7 +130,9 @@
         "attachmentUploadSuccess": "Fichier importé avec succès.",
         "attachmentFilledFields": "Fichier importé — champs remplis automatiquement : {{fields}}",
         "attachmentDeleteSuccess": "Fichier supprimé.",
-        "attachmentErrorGeneric": "Erreur lors de la gestion du fichier attaché."
+        "attachmentErrorGeneric": "Erreur lors de la gestion du fichier attaché.",
+        "deleteModalTitle": "Confirmer la suppression",
+        "attachmentDeleteModalTitle": "Confirmer la suppression du fichier"
     },
     "categories": {
         "errorNameRequired": "Le nom de la catégorie est obligatoire.",
@@ -164,7 +166,8 @@
         "fieldsCount_one": "{{count}} champ",
         "fieldsCount_other": "{{count}} champs",
         "subcategoriesCount_one": "{{count}} sous-catégorie",
-        "subcategoriesCount_other": "{{count}} sous-catégories"
+        "subcategoriesCount_other": "{{count}} sous-catégories",
+        "deactivateModalTitle": "Confirmer la désactivation"
     },
     "analytics": {
         "noData": "Pas encore de données à analyser.",
