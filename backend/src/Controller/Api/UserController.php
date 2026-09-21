@@ -31,6 +31,7 @@ final class UserController extends AbstractController
             'last_name' => $user->getLastName(),
             'language' => $user->getLanguage(),
             'theme_preference' => $user->getThemePreference(),
+            'fshub_connected' => $user->getFshubToken() !== null,
         ]);
     }
 
@@ -65,6 +66,13 @@ final class UserController extends AbstractController
             $user->setThemePreference($data['theme_preference']);
         }
 
+        // fshub_token : chaîne vide = déconnexion (on efface). Volontairement
+        // jamais renvoyé en clair dans une réponse JSON (voir getProfile) —
+        // seul un statut connecté/non connecté est exposé.
+        if (array_key_exists('fshub_token', $data)) {
+            $user->setFshubToken($data['fshub_token'] === '' ? null : $data['fshub_token']);
+        }
+
         if (isset($data['email']) && $data['email'] !== $user->getEmail()) {
             $existingUser = $entityManager->getRepository(User::class)->findOneBy(['email' => $data['email']]);
             if ($existingUser) {
@@ -95,6 +103,7 @@ final class UserController extends AbstractController
                 'last_name' => $user->getLastName(),
                 'language' => $user->getLanguage(),
                 'theme_preference' => $user->getThemePreference(),
+                'fshub_connected' => $user->getFshubToken() !== null,
             ]
         ]);
     }

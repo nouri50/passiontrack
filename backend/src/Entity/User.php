@@ -64,6 +64,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTime $resetTokenExpiresAt = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $fshubToken = null;
+
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Session::class)]
     private Collection $sessions;
 
@@ -75,6 +78,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Integration::class)]
     private Collection $integrations;
+
+
 
     public function __construct()
     {
@@ -270,6 +275,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setResetTokenExpiresAt(?\DateTime $resetTokenExpiresAt): static
     {
         $this->resetTokenExpiresAt = $resetTokenExpiresAt;
+        return $this;
+    }
+
+    public function getFshubToken(): ?string
+    {
+        return $this->fshubToken;
+    }
+
+    public function setFshubToken(?string $fshubToken): static
+    {
+        $this->fshubToken = $fshubToken;
         return $this;
     }
 

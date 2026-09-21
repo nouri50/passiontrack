@@ -194,3 +194,40 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+.profile-subtitle {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0 0 16px;
+}
+
+.profile-fshub-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.profile-fshub-connected {
+    color: var(--color-success);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.profile-fshub-disconnect {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--color-error);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.profile-fshub-disconnect:hover {
+    border-color: var(--color-error);
+}
+
+.profile-fshub-disconnect:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
