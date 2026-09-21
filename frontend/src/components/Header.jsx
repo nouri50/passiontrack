@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import useAuthStore from "../stores/authStore";
 import useNotificationStore from "../stores/notificationStore";
@@ -14,6 +14,7 @@ function Header() {
   const { notifications, isLoaded, fetchNotifications } =
     useNotificationStore();
   const { language, setLanguage } = useLanguageStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayName = user?.first_name || user?.username || "Utilisateur";
   const avatarInitial = displayName.charAt(0).toUpperCase();
@@ -26,14 +27,17 @@ function Header() {
     }
   }, [isAuthenticated, isLoaded, fetchNotifications]);
 
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
   const handleLogout = () => {
+    closeMobileMenu();
     logout();
     navigate("/login", { replace: true });
   };
 
   return (
     <header className="header">
-      <Link to="/" className="header-logo">
+      <Link to="/" className="header-logo" onClick={closeMobileMenu}>
         <svg viewBox="0 0 100 100" className="header-logo-icon">
           <circle
             cx="50"
@@ -56,74 +60,95 @@ function Header() {
         <span className="header-title">PassionTrack</span>
       </Link>
 
-      {isAuthenticated && (
-        <nav className="header-nav">
-          <Link to="/dashboard">{t("header.dashboard")}</Link>
-          <Link to="/sessions">{t("header.sessions")}</Link>
-          <Link to="/analytics">{t("header.analytics")}</Link>
-          <Link to="/notifications" className="header-nav-notif">
-            {t("header.notifications")}
-            {unreadCount > 0 && (
-              <span className="header-notif-badge">{unreadCount}</span>
-            )}
-          </Link>
-          <Link to="/categories">{t("header.categories")}</Link>
-        </nav>
-      )}
+      <button
+        type="button"
+        className="header-menu-toggle"
+        onClick={() => setMobileMenuOpen((open) => !open)}
+        aria-label={
+          mobileMenuOpen ? t("header.closeMenu") : t("header.openMenu")
+        }
+        aria-expanded={mobileMenuOpen}
+      >
+        {mobileMenuOpen ? "✕" : "☰"}
+      </button>
 
-      <div className="header-actions">
-        <div className="header-lang-switch">
-          <button
-            type="button"
-            onClick={() => setLanguage("fr")}
-            className={`header-lang-btn ${language === "fr" ? "active" : ""}`}
-            aria-label="Français"
-          >
-            FR
-          </button>
-          <button
-            type="button"
-            onClick={() => setLanguage("en")}
-            className={`header-lang-btn ${language === "en" ? "active" : ""}`}
-            aria-label="English"
-          >
-            EN
-          </button>
-        </div>
-
-        {isAuthenticated ? (
-          <div className="header-user">
-            <Link
-              to="/profile"
-              className="header-user-link"
-              aria-label={`Profil de ${displayName}`}
-            >
-              <span className="header-avatar">{avatarInitial}</span>
-              <span className="header-username">{displayName}</span>
+      <div
+        className={`header-collapsible ${mobileMenuOpen ? "header-collapsible--open" : ""}`}
+      >
+        {isAuthenticated && (
+          <nav className="header-nav" onClick={closeMobileMenu}>
+            <Link to="/dashboard">{t("header.dashboard")}</Link>
+            <Link to="/sessions">{t("header.sessions")}</Link>
+            <Link to="/analytics">{t("header.analytics")}</Link>
+            <Link to="/notifications" className="header-nav-notif">
+              {t("header.notifications")}
+              {unreadCount > 0 && (
+                <span className="header-notif-badge">{unreadCount}</span>
+              )}
             </Link>
+            <Link to="/categories">{t("header.categories")}</Link>
+          </nav>
+        )}
 
+        <div className="header-actions">
+          <div className="header-lang-switch">
             <button
               type="button"
-              onClick={handleLogout}
-              className="header-logout"
+              onClick={() => setLanguage("fr")}
+              className={`header-lang-btn ${language === "fr" ? "active" : ""}`}
+              aria-label="Français"
             >
-              {t("header.logout")}
+              FR
             </button>
-
             <button
               type="button"
-              onClick={toggleTheme}
-              className="header-theme-toggle"
-              aria-label="Changer de thème"
+              onClick={() => setLanguage("en")}
+              className={`header-lang-btn ${language === "en" ? "active" : ""}`}
+              aria-label="English"
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              EN
             </button>
           </div>
-        ) : (
-          <Link to="/login" className="header-login-link">
-            {t("header.login")}
-          </Link>
-        )}
+
+          {isAuthenticated ? (
+            <div className="header-user">
+              <Link
+                to="/profile"
+                className="header-user-link"
+                aria-label={`Profil de ${displayName}`}
+                onClick={closeMobileMenu}
+              >
+                <span className="header-avatar">{avatarInitial}</span>
+                <span className="header-username">{displayName}</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="header-logout"
+              >
+                {t("header.logout")}
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="header-theme-toggle"
+                aria-label="Changer de thème"
+              >
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="header-login-link"
+              onClick={closeMobileMenu}
+            >
+              {t("header.login")}
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );
