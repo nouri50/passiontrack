@@ -48,3 +48,14 @@ export const getSessionTrace = async (id) => {
     const { data } = await api.get(`/sessions/${id}/trace`);
     return data.points;
 };
+
+export const getFshubFlights = async () => {
+    const { data } = await api.get('/fshub/flights');
+    return data.flights;
+};
+
+export const importFshubFlight = async (sessionId, flightId = null) => {
+    const payload = flightId !== null ? { flight_id: flightId } : {};
+    const { data } = await api.post(`/sessions/${sessionId}/fshub-import`, payload);
+    return data;
+};

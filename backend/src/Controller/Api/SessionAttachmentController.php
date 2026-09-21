@@ -31,6 +31,7 @@ final class SessionAttachmentController extends AbstractController
     private const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mo
     private const ALLOWED_EXTENSIONS = ['xlsx'];
     private const STORAGE_SUBDIR = 'flight_reports';
+    private const FSHUB_TRACKS_SUBDIR = 'fshub_tracks';
 
     public function __construct(
         #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
@@ -183,6 +184,102 @@ final class SessionAttachmentController extends AbstractController
         }
 
         return $this->file($filePath, basename($filePath));
+    }
+
+    /**
+     * Sert les points de trace GPS affichés par FlightMap sur SessionDetail.
+     *
+     * Deux sources possibles, jamais combinées :
+     * - Un fichier SimBit attaché (session.attachment_url renseigné) : on
+     *   reparse le .xlsx à la demande (voir docblock de la classe — le
+     *   détail n'est jamais stocké en base) et on renvoie raw_data tel
+     *   quel, déjà sous la forme { time, latitude, longitude, alt, galt,
+     *   ias, tas, gs, vspeed, heading } attendue par FlightMap.
+     * - Un import FSHub (attachment_url vide) : on relit le fichier stocké
+     *   par FSHubController::storeTrack() à l'import (GeoJSON
+     *   FeatureCollection, coordonnées [longitude, latitude] à l'ordre
+     *   standard GeoJSON) et on le convertit vers la même forme
+     *   { latitude, longitude } que ci-dessus.
+     */
+    #[Route('/api/sessions/{id}/trace', name: 'app_api_session_trace', methods: ['GET'])]
+    public function trace(int $id, EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $session = $entityManager->getRepository(Session::class)->find($id);
+
+        if (!$session) {
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
+        }
+
+        if ($session->getUser() !== $user) {
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
+        }
+
+        if ($session->getAttachmentUrl()) {
+            $filePath = $this->projectDir . '/var/uploads/' . $session->getAttachmentUrl();
+
+            if (!is_file($filePath)) {
+                return $this->json(['error' => 'ATTACHMENT_NOT_FOUND'], 404);
+            }
+
+            try {
+                $parsed = $this->parser->parse($filePath);
+            } catch (\Throwable $e) {
+                error_log('Trace parse failed: ' . $e->getMessage());
+                return $this->json(['error' => 'TRACE_PARSE_FAILED'], 500);
+            }
+
+            return $this->json(['points' => $parsed['raw_data']]);
+        }
+
+        // Repli FSHub : aucun fichier SimBit attaché, on tente la trace
+        // stockée par FSHubController::storeTrack() à l'import.
+        $trackPath = $this->projectDir . '/var/uploads/' . self::FSHUB_TRACKS_SUBDIR . '/' . $id . '.json';
+
+        if (!is_file($trackPath)) {
+            return $this->json(['error' => 'TRACE_NOT_FOUND'], 404);
+        }
+
+        $track = json_decode((string) file_get_contents($trackPath), true);
+
+        if (!is_array($track)) {
+            return $this->json(['error' => 'TRACE_NOT_FOUND'], 404);
+        }
+
+        return $this->json(['points' => $this->extractPointsFromGeoJson($track)]);
+    }
+
+    /**
+     * Convertit une trace GeoJSON FSHub (FeatureCollection de géométries
+     * LineString, coordonnées [longitude, latitude] à l'ordre standard
+     * GeoJSON) vers la même forme que SimBitReportParser::parseRawData() :
+     * un tableau de points { latitude, longitude }, consommé tel quel par
+     * FlightMap.
+     *
+     * @return array<int, array{latitude: float, longitude: float}>
+     */
+    private function extractPointsFromGeoJson(array $geoJson): array
+    {
+        $points = [];
+
+        foreach ($geoJson['features'] ?? [] as $feature) {
+            $coordinates = $feature['geometry']['coordinates'] ?? [];
+
+            foreach ($coordinates as $coordinate) {
+                if (!isset($coordinate[0], $coordinate[1])) {
+                    continue;
+                }
+
+                $points[] = [
+                    'longitude' => (float) $coordinate[0],
+                    'latitude' => (float) $coordinate[1],
+                ];
+            }
+        }
+
+        return $points;
     }
 
     #[Route('/api/sessions/{id}/attachment', name: 'app_api_session_attachment_delete', methods: ['DELETE'])]
