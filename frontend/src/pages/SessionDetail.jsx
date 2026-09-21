@@ -8,6 +8,8 @@ import {
   downloadSessionAttachment,
   deleteSessionAttachment,
   getSessionTrace,
+  getFshubFlights,
+  importFshubFlight,
 } from "../services/sessionService";
 import {
   getSessionAnalysis,
@@ -53,6 +55,9 @@ function SessionDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAttachmentDeleteConfirm, setShowAttachmentDeleteConfirm] =
     useState(false);
+  const [fshubFlights, setFshubFlights] = useState(null);
+  const [fshubListLoading, setFshubListLoading] = useState(false);
+  const [fshubImportingId, setFshubImportingId] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -76,11 +81,15 @@ function SessionDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!session?.attachment_url) {
+    if (!session) {
       setTrace(null);
       return;
     }
 
+    // Volontairement pas conditionné sur attachment_url : une session
+    // FSHub n'a jamais ce champ rempli, mais peut quand même avoir une
+    // trace stockée côté serveur (voir SessionAttachmentController::
+    // tryFshubTrace). Le backend décide de la source, ici on tente juste.
     let cancelled = false;
     getSessionTrace(id)
       .then((points) => {
@@ -206,6 +215,60 @@ function SessionDetail() {
     }
   };
 
+  const handleFshubListFlights = async () => {
+    setFshubListLoading(true);
+    try {
+      const flights = await getFshubFlights();
+      setFshubFlights(flights);
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.fshubErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setFshubListLoading(false);
+    }
+  };
+
+  const handleFshubImport = async (flightId) => {
+    setFshubImportingId(flightId);
+    try {
+      const result = await importFshubFlight(id, flightId);
+
+      setSession((prev) => ({ ...prev, data: result.data }));
+      setFshubFlights(null);
+
+      if (result.filled_fields && result.filled_fields.length > 0) {
+        addToast(
+          t("sessionDetail.fshubFilledFields", {
+            fields: result.filled_fields.join(", "),
+          }),
+          "success",
+        );
+      } else {
+        addToast(t("sessionDetail.fshubImportSuccess"), "success");
+      }
+
+      // La trace FSHub, si elle existe, ne déclenche pas le useEffect
+      // habituel (celui-ci se redéclenche sur attachment_url, qui reste
+      // toujours vide pour une session FSHub) — on la recharge donc
+      // directement ici pour que la carte apparaisse sans recharger la page.
+      try {
+        const points = await getSessionTrace(id);
+        setTrace(points);
+      } catch {
+        // Pas grave : la trace peut simplement ne pas exister pour ce vol.
+      }
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.fshubErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setFshubImportingId(null);
+    }
+  };
+
   if (isLoading) {
     return <div className="session-detail-loading">{t("common.loading")}</div>;
   }
@@ -308,28 +371,25 @@ function SessionDetail() {
         <h2>{t("sessionDetail.attachmentTitle")}</h2>
 
         {session.attachment_url ? (
-          <>
-            <div className="session-detail-attachment">
-              <button
-                type="button"
-                onClick={handleAttachmentDownload}
-                disabled={attachmentDownloading}
-                className="session-detail-attachment-btn"
-              >
-                {attachmentDownloading
-                  ? t("sessionDetail.attachmentDownloading")
-                  : t("sessionDetail.attachmentDownload")}
-              </button>
-              <button
-                type="button"
-                onClick={handleAttachmentDeleteClick}
-                className="session-detail-attachment-btn session-detail-attachment-btn--danger"
-              >
-                {t("sessionDetail.attachmentDelete")}
-              </button>
-            </div>
-            {trace && <FlightMap points={trace} />}
-          </>
+          <div className="session-detail-attachment">
+            <button
+              type="button"
+              onClick={handleAttachmentDownload}
+              disabled={attachmentDownloading}
+              className="session-detail-attachment-btn"
+            >
+              {attachmentDownloading
+                ? t("sessionDetail.attachmentDownloading")
+                : t("sessionDetail.attachmentDownload")}
+            </button>
+            <button
+              type="button"
+              onClick={handleAttachmentDeleteClick}
+              className="session-detail-attachment-btn session-detail-attachment-btn--danger"
+            >
+              {t("sessionDetail.attachmentDelete")}
+            </button>
+          </div>
         ) : (
           <form
             onSubmit={handleAttachmentUpload}
@@ -353,6 +413,56 @@ function SessionDetail() {
                 : t("sessionDetail.attachmentUploadButton")}
             </button>
           </form>
+        )}
+
+        {/* Rendue dès qu'une trace existe, qu'elle vienne d'un upload
+            SimBit (attachment_url renseigné) ou d'un import FSHub
+            (attachment_url toujours vide — voir le useEffect de trace
+            et handleFshubImport, qui recharge trace après import). */}
+        {trace && <FlightMap points={trace} />}
+      </div>
+
+      <div className="session-detail-section">
+        <h2>{t("sessionDetail.fshubTitle")}</h2>
+
+        {!fshubFlights ? (
+          <button
+            type="button"
+            onClick={handleFshubListFlights}
+            disabled={fshubListLoading}
+            className="session-detail-attachment-btn"
+          >
+            {fshubListLoading
+              ? t("sessionDetail.fshubLoading")
+              : t("sessionDetail.fshubShowFlights")}
+          </button>
+        ) : fshubFlights.length === 0 ? (
+          <p className="session-detail-fshub-empty">
+            {t("sessionDetail.fshubNoFlights")}
+          </p>
+        ) : (
+          <ul className="session-detail-fshub-list">
+            {fshubFlights.map((flight) => (
+              <li key={flight.id} className="session-detail-fshub-item">
+                <span className="session-detail-fshub-item-info">
+                  {flight.departure} → {flight.arrival} · {flight.aircraft}
+                  {flight.departure_time
+                    ? ` · ${new Date(flight.departure_time).toLocaleString(dateLocale)}`
+                    : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleFshubImport(flight.id)}
+                  disabled={fshubImportingId !== null}
+                  className="session-detail-attachment-btn"
+                >
+                  {fshubImportingId === flight.id
+                    ? t("sessionDetail.fshubImporting")
+                    : t("sessionDetail.fshubImportButton")}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

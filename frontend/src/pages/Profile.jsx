@@ -43,6 +43,9 @@ function Profile() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const [fshubToken, setFshubToken] = useState("");
+  const [fshubSubmitting, setFshubSubmitting] = useState(false);
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setProfileSubmitting(true);
@@ -62,6 +65,42 @@ function Profile() {
       );
     } finally {
       setProfileSubmitting(false);
+    }
+  };
+
+  const handleFshubConnect = async (e) => {
+    e.preventDefault();
+    if (!fshubToken.trim()) return;
+
+    setFshubSubmitting(true);
+    try {
+      await updateProfile({ fshub_token: fshubToken.trim() });
+      await fetchUser();
+      setFshubToken("");
+      addToast(t("profile.fshubConnectSuccess"), "success");
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "profile.fshubErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setFshubSubmitting(false);
+    }
+  };
+
+  const handleFshubDisconnect = async () => {
+    setFshubSubmitting(true);
+    try {
+      await updateProfile({ fshub_token: "" });
+      await fetchUser();
+      addToast(t("profile.fshubDisconnectSuccess"), "success");
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "profile.fshubErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setFshubSubmitting(false);
     }
   };
 
@@ -179,6 +218,54 @@ function Profile() {
             {profileSubmitting ? t("sessionEdit.submitting") : t("common.save")}
           </button>
         </form>
+      </div>
+
+      <div className="profile-card">
+        <h2>{t("profile.fshubTitle")}</h2>
+        <p className="profile-subtitle">{t("profile.fshubDescription")}</p>
+
+        {user?.fshub_connected ? (
+          <div className="profile-fshub-status">
+            <span className="profile-fshub-connected">
+              {t("profile.fshubConnected")}
+            </span>
+            <button
+              type="button"
+              className="profile-fshub-disconnect"
+              onClick={handleFshubDisconnect}
+              disabled={fshubSubmitting}
+            >
+              {fshubSubmitting
+                ? t("profile.fshubDisconnecting")
+                : t("profile.fshubDisconnect")}
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleFshubConnect} className="profile-form">
+            <div className="profile-field">
+              <label htmlFor="fshub_token">
+                {t("profile.fshubTokenLabel")}
+              </label>
+              <input
+                id="fshub_token"
+                type="password"
+                value={fshubToken}
+                onChange={(e) => setFshubToken(e.target.value)}
+                placeholder={t("profile.fshubTokenPlaceholder")}
+                autoComplete="off"
+              />
+            </div>
+            <button
+              type="submit"
+              className="profile-submit"
+              disabled={!fshubToken.trim() || fshubSubmitting}
+            >
+              {fshubSubmitting
+                ? t("profile.fshubConnecting")
+                : t("profile.fshubConnect")}
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="profile-card">
