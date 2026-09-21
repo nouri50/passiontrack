@@ -132,7 +132,16 @@
         "attachmentDeleteSuccess": "File deleted.",
         "attachmentErrorGeneric": "Error managing the attached file.",
         "deleteModalTitle": "Confirm deletion",
-        "attachmentDeleteModalTitle": "Confirm file deletion"
+        "attachmentDeleteModalTitle": "Confirm file deletion",
+        "fshubTitle": "Import from FSHub",
+        "fshubShowFlights": "Show my recent FSHub flights",
+        "fshubLoading": "Loading...",
+        "fshubNoFlights": "No flights found on FSHub.",
+        "fshubImportButton": "Import",
+        "fshubImporting": "Importing...",
+        "fshubImportSuccess": "FSHub flight imported successfully.",
+        "fshubFilledFields": "FSHub flight imported — auto-filled fields: {{fields}}",
+        "fshubErrorGeneric": "Error importing from FSHub."
     },
     "categories": {
         "errorNameRequired": "Category name is required.",
@@ -204,7 +213,20 @@
         "successDeleted": "Account deleted.",
         "errorDeleting": "Error deleting account.",
         "errorPasswordRequired": "Password is required to confirm deletion.",
-        "deleteAccountModalTitle": "Confirm deletion"
+        "deleteAccountModalTitle": "Confirm deletion",
+        "fshubTitle": "FSHub Integration",
+        "fshubDescription": "Connect your FSHub account to import your flights directly (career mode included), without going through a file.",
+        "fshubConnected": "Connected ✓",
+        "fshubDisconnect": "Disconnect",
+        "fshubDisconnecting": "Disconnecting...",
+        "fshubTokenLabel": "FSHub personal access token",
+        "fshubTokenPlaceholder": "Paste your token here",
+        "fshubConnect": "Connect",
+        "fshubConnecting": "Connecting...",
+        "fshubConnectSuccess": "FSHub account connected.",
+        "fshubDisconnectSuccess": "FSHub account disconnected.",
+        "fshubErrorGeneric": "Error managing the FSHub connection."
+
     },
     "notifications": {
         "allFilter": "All ({{count}})",
@@ -253,7 +275,10 @@
         "ATTACHMENT_TOO_LARGE": "File is too large (5 MB maximum).",
         "ATTACHMENT_SAVE_FAILED": "Failed to save the file.",
         "ATTACHMENT_PARSE_FAILED": "This file doesn't appear to be a valid SimBit export.",
-        "ATTACHMENT_NOT_FOUND": "No file attached to this session."
+        "ATTACHMENT_NOT_FOUND": "No file attached to this session.",
+        "FSHUB_TOKEN_MISSING": "No FSHub account connected (see your profile).",
+        "FSHUB_REQUEST_FAILED": "Unable to reach FSHub. Please try again later.",
+        "FSHUB_NO_FLIGHT_FOUND": "No flight found on your FSHub account."
     },
     "common": {
         "loading": "Loading...",
