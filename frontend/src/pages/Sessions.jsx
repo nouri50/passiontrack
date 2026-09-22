@@ -13,6 +13,8 @@ function Sessions() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("date_desc");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -53,10 +55,27 @@ function Sessions() {
     ),
   ];
 
-  const displayedSessions =
+  const bySubcategory =
     selectedSubcategory === "all"
       ? byCategory
       : byCategory.filter((s) => s.subcategory === selectedSubcategory);
+
+  const bySearch =
+    searchQuery.trim() === ""
+      ? bySubcategory
+      : bySubcategory.filter((s) =>
+          s.title.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+        );
+
+  const sortComparators = {
+    date_desc: (a, b) => new Date(b.date_start) - new Date(a.date_start),
+    date_asc: (a, b) => new Date(a.date_start) - new Date(b.date_start),
+    duration_desc: (a, b) => (b.duration || 0) - (a.duration || 0),
+    duration_asc: (a, b) => (a.duration || 0) - (b.duration || 0),
+    title_asc: (a, b) => a.title.localeCompare(b.title),
+  };
+
+  const displayedSessions = [...bySearch].sort(sortComparators[sortOrder]);
 
   const formatDuration = (duration) => {
     if (!duration) return t("sessions.durationNotSet");
@@ -146,17 +165,47 @@ function Sessions() {
         </section>
       )}
 
+      <div className="sessions-toolbar">
+        <div className="sessions-search">
+          <span className="sessions-search-icon">🔍</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("sessions.searchPlaceholder")}
+            aria-label={t("sessions.searchPlaceholder")}
+          />
+        </div>
+
+        <select
+          className="sessions-sort"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          aria-label={t("sessions.sortLabel")}
+        >
+          <option value="date_desc">{t("sessions.sortDateDesc")}</option>
+          <option value="date_asc">{t("sessions.sortDateAsc")}</option>
+          <option value="duration_desc">
+            {t("sessions.sortDurationDesc")}
+          </option>
+          <option value="duration_asc">{t("sessions.sortDurationAsc")}</option>
+          <option value="title_asc">{t("sessions.sortTitleAsc")}</option>
+        </select>
+      </div>
+
       {displayedSessions.length === 0 ? (
         <section className="sessions-empty">
           <span className="sessions-empty-icon">🗂️</span>
           <h2>{t("sessions.noSessionsFound")}</h2>
           <p>
-            {selectedCategory === "all"
-              ? t("sessions.createFirst")
-              : t("sessions.noneInCategory")}
+            {searchQuery.trim() !== ""
+              ? t("sessions.noSearchResults")
+              : selectedCategory === "all"
+                ? t("sessions.createFirst")
+                : t("sessions.noneInCategory")}
           </p>
 
-          {selectedCategory === "all" && (
+          {searchQuery.trim() === "" && selectedCategory === "all" && (
             <Link to="/sessions/new" className="sessions-create-button">
               {t("sessions.createFirstSession")}
             </Link>
@@ -183,10 +232,7 @@ function Sessions() {
 
                 <div className="session-card-meta">
                   <span>
-                    📅{" "}
-                    {new Date(session.date_start).toLocaleDateString(
-                      dateLocale,
-                    )}
+                    📅 {new Date(session.date_start).toLocaleString(dateLocale)}
                   </span>
                   <span>⏱ {formatDuration(session.duration)}</span>
                 </div>
