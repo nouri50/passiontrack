@@ -71,7 +71,15 @@
         "createFirst": "Create your first session to start tracking your progress.",
         "createFirstSession": "Create my first session",
         "noneInCategory": "No sessions exist in this category.",
-        "durationNotSet": "Duration not set"
+        "durationNotSet": "Duration not set",
+        "searchPlaceholder": "Search a session by title...",
+        "sortLabel": "Sort sessions",
+        "sortDateDesc": "Date (most recent first)",
+        "sortDateAsc": "Date (oldest first)",
+        "sortDurationDesc": "Duration (longest first)",
+        "sortDurationAsc": "Duration (shortest first)",
+        "sortTitleAsc": "Title (A to Z)",
+        "noSearchResults": "No session matches your search."
     },
     "sessionForm": {
         "newSessionTitle": "New session",

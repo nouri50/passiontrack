@@ -71,7 +71,15 @@
         "createFirst": "Crée ta première session pour commencer à suivre ta progression.",
         "createFirstSession": "Créer ma première session",
         "noneInCategory": "Aucune session n'existe dans cette catégorie.",
-        "durationNotSet": "Durée non renseignée"
+        "durationNotSet": "Durée non renseignée",
+        "searchPlaceholder": "Rechercher une session par titre...",
+        "sortLabel": "Trier les sessions",
+        "sortDateDesc": "Date (plus récent d'abord)",
+        "sortDateAsc": "Date (plus ancien d'abord)",
+        "sortDurationDesc": "Durée (plus longue d'abord)",
+        "sortDurationAsc": "Durée (plus courte d'abord)",
+        "sortTitleAsc": "Titre (A à Z)",
+        "noSearchResults": "Aucune session ne correspond à ta recherche."
     },
     "sessionForm": {
         "newSessionTitle": "Nouvelle session",
