@@ -2,9 +2,11 @@
 
 namespace App\Controller\Api;
 
+use App\Entity\Avatar;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -13,6 +15,9 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class UserController extends AbstractController
 {
+    private const MAX_AVATAR_SIZE = 3 * 1024 * 1024; // 3 Mo
+    private const ALLOWED_AVATAR_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+
     #[Route('/api/user', name: 'app_api_user_get', methods: ['GET'])]
     public function getProfile(): JsonResponse
     {
@@ -32,6 +37,7 @@ final class UserController extends AbstractController
             'language' => $user->getLanguage(),
             'theme_preference' => $user->getThemePreference(),
             'fshub_connected' => $user->getFshubToken() !== null,
+            'avatar_url' => $user->getAvatar()?->getImageUrl(),
         ]);
     }
 
@@ -104,8 +110,121 @@ final class UserController extends AbstractController
                 'language' => $user->getLanguage(),
                 'theme_preference' => $user->getThemePreference(),
                 'fshub_connected' => $user->getFshubToken() !== null,
+                'avatar_url' => $user->getAvatar()?->getImageUrl(),
             ]
         ]);
+    }
+
+    #[Route('/api/user/avatar', name: 'app_api_user_avatar_upload', methods: ['POST'])]
+    public function uploadAvatar(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        #[Autowire('%kernel.project_dir%')] string $projectDir
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
+        }
+
+        $file = $request->files->get('file');
+
+        if (!$file) {
+            return $this->json(['error' => 'AVATAR_MISSING_FILE'], 400);
+        }
+
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        if (!in_array($extension, self::ALLOWED_AVATAR_EXTENSIONS, true)) {
+            return $this->json(['error' => 'AVATAR_INVALID_FORMAT'], 400);
+        }
+
+        if ($file->getSize() > self::MAX_AVATAR_SIZE) {
+            return $this->json(['error' => 'AVATAR_TOO_LARGE'], 400);
+        }
+
+        // Stocké dans public/ (contrairement aux rapports de vol SimBit,
+        // volontairement privés) car un avatar doit être directement
+        // affichable via une simple balise <img>, sans passer par un
+        // endpoint authentifié.
+        $uploadDir = $projectDir . '/public/uploads/avatars';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            error_log('Avatar upload: failed to create directory ' . $uploadDir);
+            return $this->json(['error' => 'AVATAR_SAVE_FAILED'], 500);
+        }
+
+        // Nom de fichier unique par utilisateur + horodatage : évite les
+        // collisions et les soucis de cache navigateur sur un remplacement.
+        $filename = sprintf('%d_%d.%s', $user->getId(), time(), $extension);
+
+        try {
+            $file->move($uploadDir, $filename);
+        } catch (\Throwable $e) {
+            error_log('Avatar move failed: ' . $e->getMessage());
+            return $this->json(['error' => 'AVATAR_SAVE_FAILED'], 500);
+        }
+
+        // Nettoyage de l'ancien avatar personnalisé avant d'en créer un
+        // nouveau — jamais un avatar prédéfini, potentiellement partagé
+        // entre plusieurs utilisateurs (aucune fonctionnalité de partage
+        // n'existe pour l'instant, mais on ne le supprime jamais par
+        // prudence).
+        $oldAvatar = $user->getAvatar();
+        if ($oldAvatar !== null && !$oldAvatar->isPredefined()) {
+            $oldPath = $projectDir . '/public/' . ltrim((string) parse_url($oldAvatar->getImageUrl(), PHP_URL_PATH), '/');
+            if (is_file($oldPath)) {
+                @unlink($oldPath);
+            }
+            $entityManager->remove($oldAvatar);
+        }
+
+        $avatar = new Avatar();
+        $avatar->setName('Avatar personnalisé');
+        $avatar->setType('custom');
+        $avatar->setImageUrl($request->getSchemeAndHttpHost() . '/uploads/avatars/' . $filename);
+        $avatar->setIsPredefined(false);
+
+        $entityManager->persist($avatar);
+        $user->setAvatar($avatar);
+        $user->setUpdatedAt(new \DateTime());
+        $entityManager->flush();
+
+        return $this->json([
+            'message' => 'Avatar uploaded successfully',
+            'avatar_url' => $avatar->getImageUrl(),
+        ]);
+    }
+
+    #[Route('/api/user/avatar', name: 'app_api_user_avatar_delete', methods: ['DELETE'])]
+    public function removeAvatar(
+        EntityManagerInterface $entityManager,
+        #[Autowire('%kernel.project_dir%')] string $projectDir
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'NOT_AUTHENTICATED'], 401);
+        }
+
+        $avatar = $user->getAvatar();
+
+        if ($avatar !== null) {
+            $user->setAvatar(null);
+
+            if (!$avatar->isPredefined()) {
+                $path = $projectDir . '/public/' . ltrim((string) parse_url($avatar->getImageUrl(), PHP_URL_PATH), '/');
+                if (is_file($path)) {
+                    @unlink($path);
+                }
+                $entityManager->remove($avatar);
+            }
+
+            $user->setUpdatedAt(new \DateTime());
+            $entityManager->flush();
+        }
+
+        return $this->json(['message' => 'Avatar removed successfully']);
     }
 
     #[Route('/api/user/password', name: 'app_api_user_password', methods: ['PUT'])]
