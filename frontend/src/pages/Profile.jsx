@@ -7,6 +7,8 @@ import {
   updateProfile,
   updatePassword,
   deleteAccount,
+  uploadAvatar,
+  deleteAvatar,
 } from "../services/userService";
 import ConfirmModal from "../components/ConfirmModal";
 import { getApiErrorMessage } from "../utils/apiError";
@@ -45,6 +47,9 @@ function Profile() {
 
   const [fshubToken, setFshubToken] = useState("");
   const [fshubSubmitting, setFshubSubmitting] = useState(false);
+
+  const [avatarSubmitting, setAvatarSubmitting] = useState(false);
+  const [avatarRemoving, setAvatarRemoving] = useState(false);
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
@@ -101,6 +106,42 @@ function Profile() {
       );
     } finally {
       setFshubSubmitting(false);
+    }
+  };
+
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setAvatarSubmitting(true);
+    try {
+      await uploadAvatar(file);
+      await fetchUser();
+      addToast(t("profile.avatarUploadSuccess"), "success");
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "profile.avatarErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setAvatarSubmitting(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setAvatarRemoving(true);
+    try {
+      await deleteAvatar();
+      await fetchUser();
+      addToast(t("profile.avatarRemoveSuccess"), "success");
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "profile.avatarErrorGeneric"),
+        "error",
+      );
+    } finally {
+      setAvatarRemoving(false);
     }
   };
 
@@ -167,11 +208,48 @@ function Profile() {
       <h1 className="profile-title">{t("profile.title")}</h1>
 
       <div className="profile-header">
-        <div className="profile-avatar">{initials(user)}</div>
+        <div className="profile-avatar-wrapper">
+          {user?.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt=""
+              className="profile-avatar profile-avatar-image"
+            />
+          ) : (
+            <div className="profile-avatar">{initials(user)}</div>
+          )}
+
+          <label
+            className="profile-avatar-upload"
+            htmlFor="avatar-upload-input"
+            aria-label={t("profile.avatarUploadButton")}
+          >
+            {avatarSubmitting ? "…" : "📷"}
+          </label>
+          <input
+            id="avatar-upload-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleAvatarFileChange}
+            disabled={avatarSubmitting}
+            hidden
+          />
+        </div>
         <div>
           <p className="profile-username">{user?.username}</p>
           <p className="profile-email">{user?.email}</p>
-          <p className="profile-avatar-note">{t("profile.avatarComingSoon")}</p>
+          {user?.avatar_url && (
+            <button
+              type="button"
+              className="profile-avatar-remove"
+              onClick={handleAvatarRemove}
+              disabled={avatarRemoving}
+            >
+              {avatarRemoving
+                ? t("profile.avatarRemoving")
+                : t("profile.avatarRemoveButton")}
+            </button>
+          )}
         </div>
       </div>
 

@@ -197,7 +197,6 @@
     },
     "profile": {
         "title": "Mon profil",
-        "avatarComingSoon": "La personnalisation de l'avatar arrive bientôt.",
         "personalInfo": "Informations personnelles",
         "firstName": "Prénom",
         "lastName": "Nom",
@@ -233,7 +232,14 @@
         "fshubConnecting": "Connexion...",
         "fshubConnectSuccess": "Compte FSHub connecté.",
         "fshubDisconnectSuccess": "Compte FSHub déconnecté.",
-        "fshubErrorGeneric": "Erreur lors de la gestion de la connexion FSHub."
+        "fshubErrorGeneric": "Erreur lors de la gestion de la connexion FSHub.",
+        "avatarUploadButton": "Changer la photo",
+        "avatarUploading": "Envoi...",
+        "avatarRemoveButton": "Retirer la photo",
+        "avatarRemoving": "Suppression...",
+        "avatarUploadSuccess": "Photo de profil mise à jour.",
+        "avatarRemoveSuccess": "Photo de profil retirée.",
+        "avatarErrorGeneric": "Erreur lors de la gestion de la photo de profil."
     },
     "notifications": {
         "allFilter": "Toutes ({{count}})",
@@ -285,7 +291,11 @@
         "ATTACHMENT_NOT_FOUND": "Aucun fichier attaché à cette session.",
         "FSHUB_TOKEN_MISSING": "Aucun compte FSHub connecté (voir ton profil).",
         "FSHUB_REQUEST_FAILED": "Impossible de contacter FSHub. Réessaie plus tard.",
-        "FSHUB_NO_FLIGHT_FOUND": "Aucun vol trouvé sur ton compte FSHub."
+        "FSHUB_NO_FLIGHT_FOUND": "Aucun vol trouvé sur ton compte FSHub.",
+        "AVATAR_MISSING_FILE": "Aucune image fournie.",
+        "AVATAR_INVALID_FORMAT": "Format d'image non supporté (jpg, png ou webp uniquement).",
+        "AVATAR_TOO_LARGE": "L'image est trop volumineuse (3 Mo maximum).",
+        "AVATAR_SAVE_FAILED": "Échec de l'enregistrement de l'image."
     },
     "common": {
         "loading": "Chargement...",

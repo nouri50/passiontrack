@@ -118,7 +118,15 @@ function Header() {
                 aria-label={`Profil de ${displayName}`}
                 onClick={closeMobileMenu}
               >
-                <span className="header-avatar">{avatarInitial}</span>
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt=""
+                    className="header-avatar header-avatar-image"
+                  />
+                ) : (
+                  <span className="header-avatar">{avatarInitial}</span>
+                )}
                 <span className="header-username">{displayName}</span>
               </Link>
 

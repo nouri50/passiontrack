@@ -233,7 +233,14 @@
         "fshubConnecting": "Connecting...",
         "fshubConnectSuccess": "FSHub account connected.",
         "fshubDisconnectSuccess": "FSHub account disconnected.",
-        "fshubErrorGeneric": "Error managing the FSHub connection."
+        "fshubErrorGeneric": "Error managing the FSHub connection.",
+        "avatarUploadButton": "Change photo",
+        "avatarUploading": "Uploading...",
+        "avatarRemoveButton": "Remove photo",
+        "avatarRemoving": "Removing...",
+        "avatarUploadSuccess": "Profile photo updated.",
+        "avatarRemoveSuccess": "Profile photo removed.",
+        "avatarErrorGeneric": "Error managing profile photo."
 
     },
     "notifications": {
@@ -286,7 +293,11 @@
         "ATTACHMENT_NOT_FOUND": "No file attached to this session.",
         "FSHUB_TOKEN_MISSING": "No FSHub account connected (see your profile).",
         "FSHUB_REQUEST_FAILED": "Unable to reach FSHub. Please try again later.",
-        "FSHUB_NO_FLIGHT_FOUND": "No flight found on your FSHub account."
+        "FSHUB_NO_FLIGHT_FOUND": "No flight found on your FSHub account.",
+        "AVATAR_MISSING_FILE": "No image provided.",
+        "AVATAR_INVALID_FORMAT": "Unsupported image format (jpg, png or webp only).",
+        "AVATAR_TOO_LARGE": "The image is too large (3 MB maximum).",
+        "AVATAR_SAVE_FAILED": "Failed to save the image."
     },
     "common": {
         "loading": "Loading...",
