@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Service\Import\SimBitReportParser;
+use App\Service\Notification\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -39,8 +40,12 @@ final class SessionAttachmentController extends AbstractController
     ) {}
 
     #[Route('/api/sessions/{id}/attachment', name: 'app_api_session_attachment_upload', methods: ['POST'])]
-    public function upload(int $id, Request $request, EntityManagerInterface $entityManager): JsonResponse
-    {
+    public function upload(
+        int $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService
+    ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
 
@@ -102,6 +107,8 @@ final class SessionAttachmentController extends AbstractController
         $session->setAttachmentUrl(self::STORAGE_SUBDIR . '/' . $filename);
         $filledFields = $this->fillEmptyDataFields($session, $parsed['header']);
         $entityManager->flush();
+
+        $notificationService->checkLandingAchievements($session);
 
         return $this->json([
             'message' => 'Attachment uploaded successfully',
