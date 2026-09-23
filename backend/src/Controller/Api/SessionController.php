@@ -6,6 +6,7 @@ use App\Entity\Analysis;
 use App\Entity\Category;
 use App\Entity\Session;
 use App\Entity\User;
+use App\Service\Notification\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -120,7 +121,8 @@ final class SessionController extends AbstractController
     public function update(
         int $id,
         Request $request,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
@@ -196,6 +198,13 @@ final class SessionController extends AbstractController
         }
 
         $entityManager->flush();
+
+        // Un record personnel n'a de sens que si les métriques d'atterrissage
+        // ont pu changer, donc uniquement quand 'data' fait partie de la
+        // requête — pas sur un simple renommage de titre par exemple.
+        if (isset($data['data'])) {
+            $notificationService->checkLandingAchievements($session);
+        }
 
         return $this->json($this->serializeSession($session));
     }
