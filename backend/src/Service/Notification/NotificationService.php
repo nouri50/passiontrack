@@ -29,6 +29,18 @@ use Symfony\Component\Mime\Email;
  */
 class NotificationService
 {
+    /**
+     * Mêmes icônes que côté frontend (Notifications.jsx, NOTIF_ICONS) —
+     * gardées synchronisées à la main, les deux fichiers n'ont aucun moyen
+     * de partager une constante commune entre PHP et JS ici.
+     */
+    private const TYPE_ICONS = [
+        'ai_insight' => '🤖',
+        'progress_alert' => '✅',
+        'achievement' => '🏆',
+        'system_alert' => '⚠️',
+    ];
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly MailerInterface $mailer,
@@ -59,7 +71,7 @@ class NotificationService
         $this->entityManager->flush();
 
         if (in_array($channel, ['email', 'both'], true)) {
-            $this->sendEmail($user, $title, $message);
+            $this->sendEmail($user, $type, $title, $message);
         }
 
         return $notification;
@@ -70,7 +82,7 @@ class NotificationService
      * configuré, Gmail qui rejette, pas d'email sur le compte...) ne
      * doit pas empêcher la notification d'exister en base.
      */
-    private function sendEmail(User $user, string $subject, string $message): void
+    private function sendEmail(User $user, string $type, string $subject, string $message): void
     {
         $to = $user->getEmail();
 
@@ -87,7 +99,7 @@ class NotificationService
                 ->to($to)
                 ->subject('[PassionTrack] ' . $subject)
                 ->text($message)
-                ->html($this->buildHtmlBody($subject, $message));
+                ->html($this->buildHtmlBody($type, $subject, $message));
 
             $this->mailer->send($email);
         } catch (\Throwable $e) {
@@ -213,20 +225,38 @@ class NotificationService
     }
 
     /**
-     * Corps HTML minimal, volontairement sans dépendance à un moteur de
-     * template (pas de Twig dans ce backend API-only) — juste du HTML
-     * inline suffisant pour un email lisible.
+     * Corps HTML reprenant le style visuel de l'app (dégradé violet/bleu
+     * du header, fond sombre, icône du type de notification) — toujours
+     * sans dépendance à un moteur de template (pas de Twig dans ce
+     * backend API-only), juste du HTML/CSS inline compatible clients mail.
      */
-    private function buildHtmlBody(string $subject, string $message): string
+    private function buildHtmlBody(string $type, string $subject, string $message): string
     {
         $safeSubject = htmlspecialchars($subject, ENT_QUOTES, 'UTF-8');
         $safeMessage = nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
+        $icon = self::TYPE_ICONS[$type] ?? '🔔';
 
         return <<<HTML
-            <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #14111f; color: #f5f5f5; border-radius: 12px;">
-                <p style="color: #a3a3a3; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 12px;">PassionTrack</p>
-                <h2 style="margin: 0 0 16px; font-size: 18px;">{$safeSubject}</h2>
-                <p style="line-height: 1.6; margin: 0;">{$safeMessage}</p>
+            <div style="background-color: #0d0b14; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                <table role="presentation" width="100%" style="max-width: 480px; margin: 0 auto; border-collapse: collapse;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px 16px 0 0; padding: 22px 28px;">
+                            <span style="font-size: 18px; font-weight: 700; color: #ffffff; letter-spacing: 0.3px;">✈️ PassionTrack</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #1b1729; border: 1px solid #29292f; border-top: none; border-radius: 0 0 16px 16px; padding: 28px;">
+                            <div style="font-size: 34px; line-height: 1; margin-bottom: 14px;">{$icon}</div>
+                            <h1 style="margin: 0 0 14px; font-size: 19px; font-weight: 700; color: #f5f5f5; line-height: 1.4;">{$safeSubject}</h1>
+                            <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #a3a3a3;">{$safeMessage}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 18px 8px 0; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #737373;">Envoyé automatiquement depuis PassionTrack</p>
+                        </td>
+                    </tr>
+                </table>
             </div>
             HTML;
     }
