@@ -47,6 +47,32 @@ class ClaudeProvider implements AIProviderInterface
         ];
     }
 
+    /**
+     * Texte libre, sans tentative de parsing JSON — le chat n'a pas de
+     * structure attendue, contrairement à analyze().
+     */
+    public function chat(string $prompt): string
+    {
+        $response = $this->client->request('POST', self::CLAUDE_URL, [
+            'headers' => [
+                'x-api-key' => $this->apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ],
+            'json' => [
+                'model' => self::MODEL,
+                'max_tokens' => 1024,
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+            ],
+        ]);
+
+        $data = $response->toArray();
+
+        return trim($data['content'][0]['text'] ?? '');
+    }
+
     public function getModelName(): string
     {
         return self::MODEL;

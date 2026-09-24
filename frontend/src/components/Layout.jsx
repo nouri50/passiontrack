@@ -1,6 +1,7 @@
 import Header from "./Header";
 import Footer from "./Footer";
 import ToastContainer from "./ToastContainer";
+import ChatWidget from "./ChatWidget";
 import "../styles/Layout.css";
 
 function Layout({ children }) {
@@ -10,6 +11,7 @@ function Layout({ children }) {
       <main className="layout-content">{children}</main>
       <Footer />
       <ToastContainer />
+      <ChatWidget />
     </div>
   );
 }

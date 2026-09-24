@@ -48,6 +48,30 @@ class OllamaProvider implements AIProviderInterface
         ];
     }
 
+    /**
+     * Pas de 'format' => 'json' ici, volontairement : une réponse de
+     * chat est du texte libre à afficher tel quel, pas une structure
+     * à parser comme pour analyze().
+     */
+    public function chat(string $prompt): string
+    {
+        $response = $this->client->request('POST', self::OLLAMA_URL, [
+            'json' => [
+                'model' => self::MODEL,
+                'prompt' => $prompt,
+                'stream' => false,
+                'options' => [
+                    'num_ctx' => 8192,
+                ],
+            ],
+            'timeout' => 300,
+        ]);
+
+        $data = $response->toArray();
+
+        return trim($data['response'] ?? '');
+    }
+
     public function getModelName(): string
     {
         return self::MODEL;
