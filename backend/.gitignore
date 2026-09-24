@@ -13,3 +13,4 @@
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 reference.php
+/public/uploads/
