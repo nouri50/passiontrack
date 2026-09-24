@@ -250,6 +250,21 @@
         "noneYet": "No notifications yet.",
         "markAsRead": "Mark as read"
     },
+
+    "chat": {
+        "title": "PassionTrack Assistant",
+        "open": "Open assistant",
+        "close": "Close assistant",
+        "emptyState": "Ask me about your sessions or the passions you track.",
+        "inputPlaceholder": "Type your message...",
+        "send": "Send",
+        "thinking": "Assistant is thinking...",
+        "errorGeneric": "Error communicating with the assistant.",
+        "suggestion1": "How am I doing right now?",
+        "suggestion2": "What should I improve?",
+        "suggestion3": "What was my last session?",
+        "suggestion4": "How many hours have I logged in total?"
+    },
     "register": {
         "subtitle": "Start tracking your passions with PassionTrack.",
         "confirmPasswordLabel": "Confirm password",
@@ -297,7 +312,9 @@
         "AVATAR_MISSING_FILE": "No image provided.",
         "AVATAR_INVALID_FORMAT": "Unsupported image format (jpg, png or webp only).",
         "AVATAR_TOO_LARGE": "The image is too large (3 MB maximum).",
-        "AVATAR_SAVE_FAILED": "Failed to save the image."
+        "AVATAR_SAVE_FAILED": "Failed to save the image.",
+        "CHAT_MESSAGE_INVALID": "The message is empty or too long (2000 characters maximum).",
+        "CHAT_FAILED": "The assistant couldn't reply. Please try again later."
     },
     "common": {
         "loading": "Loading...",
