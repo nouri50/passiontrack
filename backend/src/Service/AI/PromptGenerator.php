@@ -63,7 +63,8 @@ class PromptGenerator
         return $basePrompt . " Réponds UNIQUEMENT en JSON valide, ENTIÈREMENT EN FRANÇAIS (tous les textes doivent être en français, pas d'anglais), avec cette structure exacte : "
             . '{"strengths": ["point fort 1", "point fort 2"], "weaknesses": ["point faible 1"], '
             . '"tips": ["conseil 1", "conseil 2"], "predictions": ["prédiction 1"], "summary": "résumé court en une phrase"}'
-            . " IMPORTANT : les textes entre guillemets dans cette structure (« point fort 1 », « conseil 1 », « résumé court en une phrase », etc.) décrivent le FORMAT attendu de chaque champ, ce ne sont PAS des exemples de contenu à reproduire. Ne préfixe AUCUNE valeur par le nom du champ ou une description de son format — en particulier, le champ 'summary' ne doit JAMAIS commencer par « Résumé », « Résumé court en une phrase » ou une formule équivalente : écris directement le contenu final de chaque champ, sans label ni méta-commentaire sur le format.";
+            . " IMPORTANT : les textes entre guillemets dans cette structure (« point fort 1 », « conseil 1 », « résumé court en une phrase », etc.) décrivent le FORMAT attendu de chaque champ, ce ne sont PAS des exemples de contenu à reproduire. Ne préfixe AUCUNE valeur par le nom du champ ou une description de son format — en particulier, le champ 'summary' ne doit JAMAIS commencer par « Résumé », « Résumé court en une phrase » ou une formule équivalente : écris directement le contenu final de chaque champ, sans label ni méta-commentaire sur le format."
+            . " RAPPEL FINAL IMPORTANT : tout le texte de cette consigne (règles de vocabulaire, contexte historique, rappels internes, consignes de cohérence, etc.) est destiné à TOI SEUL pour t'aider à analyser — ce n'est JAMAIS du contenu à recopier, paraphraser ou résumer dans 'strengths', 'weaknesses', 'tips', 'predictions' ou 'summary'. Si tu n'as aucun point fort, faible, conseil ou prédiction réellement utile à donner sur la session elle-même, laisse le tableau correspondant vide ([]) plutôt que d'y mettre une reformulation de tes propres instructions.";
     }
 
     private function normalizeKey(string $key): string
@@ -441,6 +442,7 @@ class PromptGenerator
         }
 
         $context .= " Compare la session actuelle à cet historique quand c'est pertinent. Si l'historique est limité (moins de 3 sessions), reste prudent dans les comparaisons statistiques.";
+        $context .= " NOTE INTERNE POUR TOI UNIQUEMENT, à ne surtout pas reformuler dans 'strengths'/'weaknesses'/'tips'/'predictions'/'summary' : tout ce paragraphe (données des sessions précédentes, moyennes historiques, consigne de comparaison) est une donnée de référence destinée UNIQUEMENT à t'aider à raisonner — ce n'est ni un point fort, ni un point faible, ni un conseil, ni une prédiction. N'écris JAMAIS dans un champ de ta réponse une phrase du type « prise en compte des données des sessions précédentes » ou « considération de l'historique » : ce n'est pas un conseil de pilotage, c'est juste toi qui décrirais ta propre consigne, ce qui n'a aucune valeur pour le pilote.";
 
         return $context;
     }
