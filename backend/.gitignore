@@ -14,3 +14,4 @@
 ###< lexik/jwt-authentication-bundle ###
 reference.php
 /public/uploads/
+/config/secrets/dev/
