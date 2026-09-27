@@ -5,77 +5,119 @@ import { getSessions } from "../services/sessionService";
 import { getCategories } from "../services/categoryService";
 import "../styles/Sessions.css";
 
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 400;
+
 function Sessions() {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
 
   const [sessions, setSessions] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("date_desc");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    total_pages: 1,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
+  // Charge la liste des catégories une seule fois (indépendant de la pagination).
   useEffect(() => {
-    async function loadSessions() {
-      try {
-        const [sessionsData, categoriesData] = await Promise.all([
-          getSessions(),
-          getCategories(),
-        ]);
+    getCategories()
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch((error) =>
+        console.error("Erreur de chargement des catégories :", error),
+      );
+  }, []);
 
-        setSessions(Array.isArray(sessionsData) ? sessionsData : []);
-        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+  // Debounce de la recherche pour éviter une requête serveur à chaque frappe.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
+
+  // Tout changement de filtre/recherche/tri doit repartir de la page 1.
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, selectedSubcategory, debouncedSearch, sortOrder]);
+
+  // Charge la page courante depuis le serveur avec les filtres actifs.
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadSessions() {
+      setIsFetching(true);
+      try {
+        const params = {
+          page,
+          limit: PAGE_SIZE,
+          sort: sortOrder,
+        };
+        if (selectedCategory !== "all") {
+          params.category_id = selectedCategory;
+        }
+        if (selectedSubcategory !== "all") {
+          params.subcategory = selectedSubcategory;
+        }
+        if (debouncedSearch !== "") {
+          params.search = debouncedSearch;
+        }
+
+        const data = await getSessions(params);
+        if (isCancelled) return;
+
+        setSessions(Array.isArray(data.sessions) ? data.sessions : []);
+        setAvailableSubcategories(
+          Array.isArray(data.available_subcategories)
+            ? data.available_subcategories
+            : [],
+        );
+        setPagination(
+          data.pagination || { page: 1, limit: PAGE_SIZE, total: 0, total_pages: 1 },
+        );
       } catch (error) {
-        console.error("Erreur de chargement des sessions :", error);
+        if (!isCancelled) {
+          console.error("Erreur de chargement des sessions :", error);
+        }
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+          setIsFetching(false);
+        }
       }
     }
 
     loadSessions();
-  }, []);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedCategory, selectedSubcategory, debouncedSearch, sortOrder, page]);
+
+  // Filet de sécurité : si la page courante n'existe plus (ex. suppression de
+  // la dernière session d'une dernière page), on revient à la dernière page valide.
+  useEffect(() => {
+    if (!isLoading && pagination.total_pages > 0 && page > pagination.total_pages) {
+      setPage(pagination.total_pages);
+    }
+  }, [pagination, page, isLoading]);
 
   const handleCategoryClick = (value) => {
     setSelectedCategory(value);
     setSelectedSubcategory("all");
   };
-
-  const byCategory =
-    selectedCategory === "all"
-      ? sessions
-      : sessions.filter(
-          (session) => String(session.category_id) === selectedCategory,
-        );
-
-  const availableSubcategories = [
-    ...new Set(
-      byCategory.map((s) => s.subcategory).filter((s) => s && s.trim() !== ""),
-    ),
-  ];
-
-  const bySubcategory =
-    selectedSubcategory === "all"
-      ? byCategory
-      : byCategory.filter((s) => s.subcategory === selectedSubcategory);
-
-  const bySearch =
-    searchQuery.trim() === ""
-      ? bySubcategory
-      : bySubcategory.filter((s) =>
-          s.title.toLowerCase().includes(searchQuery.trim().toLowerCase()),
-        );
-
-  const sortComparators = {
-    date_desc: (a, b) => new Date(b.date_start) - new Date(a.date_start),
-    date_asc: (a, b) => new Date(a.date_start) - new Date(b.date_start),
-    duration_desc: (a, b) => (b.duration || 0) - (a.duration || 0),
-    duration_asc: (a, b) => (a.duration || 0) - (b.duration || 0),
-    title_asc: (a, b) => a.title.localeCompare(b.title),
-  };
-
-  const displayedSessions = [...bySearch].sort(sortComparators[sortOrder]);
 
   const formatDuration = (duration) => {
     if (!duration) return t("sessions.durationNotSet");
@@ -170,8 +212,8 @@ function Sessions() {
           <span className="sessions-search-icon">🔍</span>
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t("sessions.searchPlaceholder")}
             aria-label={t("sessions.searchPlaceholder")}
           />
@@ -193,55 +235,95 @@ function Sessions() {
         </select>
       </div>
 
-      {displayedSessions.length === 0 ? (
+      {sessions.length === 0 ? (
         <section className="sessions-empty">
           <span className="sessions-empty-icon">🗂️</span>
           <h2>{t("sessions.noSessionsFound")}</h2>
           <p>
-            {searchQuery.trim() !== ""
+            {debouncedSearch !== ""
               ? t("sessions.noSearchResults")
               : selectedCategory === "all"
                 ? t("sessions.createFirst")
                 : t("sessions.noneInCategory")}
           </p>
 
-          {searchQuery.trim() === "" && selectedCategory === "all" && (
+          {debouncedSearch === "" && selectedCategory === "all" && (
             <Link to="/sessions/new" className="sessions-create-button">
               {t("sessions.createFirstSession")}
             </Link>
           )}
         </section>
       ) : (
-        <section className="sessions-list">
-          {displayedSessions.map((session) => (
-            <Link
-              key={session.id}
-              to={`/sessions/${session.id}`}
-              className="session-card"
-            >
-              <span className="session-card-icon">✦</span>
+        <>
+          <p className="sessions-total-count">
+            {t("sessions.paginationTotalSessions", { count: pagination.total })}
+          </p>
 
-              <div className="session-card-content">
-                <div className="session-card-heading">
-                  <h2>{session.title}</h2>
-                  <span>
-                    {session.category_name}
-                    {session.subcategory ? ` · ${session.subcategory}` : ""}
-                  </span>
+          <section className="sessions-list">
+            {sessions.map((session) => (
+              <Link
+                key={session.id}
+                to={`/sessions/${session.id}`}
+                className="session-card"
+              >
+                <span className="session-card-icon">✦</span>
+
+                <div className="session-card-content">
+                  <div className="session-card-heading">
+                    <h2>{session.title}</h2>
+                    <span>
+                      {session.category_name}
+                      {session.subcategory ? ` · ${session.subcategory}` : ""}
+                    </span>
+                  </div>
+
+                  <div className="session-card-meta">
+                    <span>
+                      📅 {new Date(session.date_start).toLocaleString(dateLocale)}
+                    </span>
+                    <span>⏱ {formatDuration(session.duration)}</span>
+                  </div>
                 </div>
 
-                <div className="session-card-meta">
-                  <span>
-                    📅 {new Date(session.date_start).toLocaleString(dateLocale)}
-                  </span>
-                  <span>⏱ {formatDuration(session.duration)}</span>
-                </div>
-              </div>
+                <span className="session-card-arrow">→</span>
+              </Link>
+            ))}
+          </section>
 
-              <span className="session-card-arrow">→</span>
-            </Link>
-          ))}
-        </section>
+          {pagination.total_pages > 1 && (
+            <nav className="sessions-pagination" aria-label={t("sessions.paginationPageOf", {
+              page: pagination.page,
+              totalPages: pagination.total_pages,
+            })}>
+              <button
+                type="button"
+                className="pagination-button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pagination.page <= 1 || isFetching}
+              >
+                ← {t("sessions.paginationPrevious")}
+              </button>
+
+              <span className="pagination-info">
+                {t("sessions.paginationPageOf", {
+                  page: pagination.page,
+                  totalPages: pagination.total_pages,
+                })}
+              </span>
+
+              <button
+                type="button"
+                className="pagination-button"
+                onClick={() =>
+                  setPage((p) => Math.min(pagination.total_pages, p + 1))
+                }
+                disabled={pagination.page >= pagination.total_pages || isFetching}
+              >
+                {t("sessions.paginationNext")} →
+              </button>
+            </nav>
+          )}
+        </>
       )}
     </div>
   );

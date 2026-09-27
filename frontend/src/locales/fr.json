@@ -79,7 +79,11 @@
         "sortDurationDesc": "Durée (plus longue d'abord)",
         "sortDurationAsc": "Durée (plus courte d'abord)",
         "sortTitleAsc": "Titre (A à Z)",
-        "noSearchResults": "Aucune session ne correspond à ta recherche."
+        "noSearchResults": "Aucune session ne correspond à ta recherche.",
+        "paginationPrevious": "Précédent",
+        "paginationNext": "Suivant",
+        "paginationPageOf": "Page {{page}} sur {{totalPages}}",
+        "paginationTotalSessions": "{{count}} session(s) au total"
     },
     "sessionForm": {
         "newSessionTitle": "Nouvelle session",

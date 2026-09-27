@@ -79,7 +79,11 @@
         "sortDurationDesc": "Duration (longest first)",
         "sortDurationAsc": "Duration (shortest first)",
         "sortTitleAsc": "Title (A to Z)",
-        "noSearchResults": "No session matches your search."
+        "noSearchResults": "No session matches your search.",
+        "paginationPrevious": "Previous",
+        "paginationNext": "Next",
+        "paginationPageOf": "Page {{page}} of {{totalPages}}",
+        "paginationTotalSessions": "{{count}} session(s) total"
     },
     "sessionForm": {
         "newSessionTitle": "New session",

@@ -36,11 +36,83 @@ final class SessionController extends AbstractController
                 ->setParameter('categoryId', $categoryId);
         }
 
-        $sessions = $qb->getQuery()->getResult();
+        // Sans paramètre "page" : comportement historique inchangé, on renvoie
+        // le tableau complet (Dashboard.jsx et Analytics.jsx en dépendent pour
+        // calculer leurs statistiques globales, donc on ne casse rien ici).
+        $page = $request->query->get('page');
+        if ($page === null) {
+            $sessions = $qb->getQuery()->getResult();
+            $data = array_map(fn(Session $s) => $this->serializeSession($s), $sessions);
 
+            return $this->json($data);
+        }
+
+        // Avec "page" : liste paginée + filtres supplémentaires, utilisée par
+        // la page "Mes sessions" (Sessions.jsx) pour éviter de charger tout
+        // l'historique d'un coup à mesure qu'il grandit.
+        $page = max(1, (int) $page);
+        $limitParam = $request->query->get('limit');
+        $limit = $limitParam !== null ? min(100, max(1, (int) $limitParam)) : 20;
+
+        // Liste des sous-catégories disponibles, calculée à part sur la même
+        // portée utilisateur/catégorie mais SANS les filtres subcategory/search
+        // ni la pagination : sinon les boutons de filtre changeraient de page
+        // en page au lieu de montrer toutes les sous-catégories existantes.
+        $subcatQb = $entityManager->getRepository(Session::class)->createQueryBuilder('sc')
+            ->select('DISTINCT sc.subcategery')
+            ->where('sc.user = :user')
+            ->andWhere("sc.subcategery IS NOT NULL AND sc.subcategery != ''")
+            ->setParameter('user', $user);
+
+        if ($categoryId) {
+            $subcatQb->andWhere('sc.category = :categoryId')
+                ->setParameter('categoryId', $categoryId);
+        }
+
+        $availableSubcategories = array_column($subcatQb->getQuery()->getScalarResult(), 'subcategery');
+
+        if ($subcategory = $request->query->get('subcategory')) {
+            $qb->andWhere('s.subcategery = :subcategory')
+                ->setParameter('subcategory', $subcategory);
+        }
+
+        if ($search = $request->query->get('search')) {
+            $qb->andWhere('LOWER(s.title) LIKE LOWER(:search)')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        $sortMap = [
+            'date_desc' => ['s.date_start', 'DESC'],
+            'date_asc' => ['s.date_start', 'ASC'],
+            'duration_desc' => ['s.duration', 'DESC'],
+            'duration_asc' => ['s.duration', 'ASC'],
+            'title_asc' => ['s.title', 'ASC'],
+        ];
+        $sortKey = $request->query->get('sort', 'date_desc');
+        [$sortField, $sortDir] = $sortMap[$sortKey] ?? $sortMap['date_desc'];
+        $qb->resetDQLPart('orderBy')->orderBy($sortField, $sortDir);
+
+        $countQb = clone $qb;
+        $total = (int) $countQb->resetDQLPart('orderBy')
+            ->select('COUNT(s.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $qb->setFirstResult(($page - 1) * $limit)->setMaxResults($limit);
+
+        $sessions = $qb->getQuery()->getResult();
         $data = array_map(fn(Session $s) => $this->serializeSession($s), $sessions);
 
-        return $this->json($data);
+        return $this->json([
+            'sessions' => $data,
+            'available_subcategories' => $availableSubcategories,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => max(1, (int) ceil($total / $limit)),
+            ],
+        ]);
     }
 
     #[Route('/api/sessions/{id}', name: 'app_api_sessions_get', methods: ['GET'])]

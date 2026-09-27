@@ -1,7 +1,7 @@
 import api from './api';
 
-export const getSessions = async () => {
-    const { data } = await api.get('/sessions');
+export const getSessions = async (params = {}) => {
+    const { data } = await api.get('/sessions', { params });
     return data;
 };
 
