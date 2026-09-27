@@ -11,11 +11,24 @@ function formatDuration(seconds) {
   return hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(seconds / 60)}min`;
 }
 
+// Détermine de quel côté ancrer le tooltip pour qu'il ne déborde jamais du
+// cadre du graphique : centré au milieu, collé à gauche/droite près des bords.
+function getTooltipAlignment(index, total) {
+  if (index < 2) return "start";
+  if (index >= total - 2) return "end";
+  return "center";
+}
+
 function Analytics() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const [sessions, setSessions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // hoveredBarIndex : survol souris (desktop). pinnedBarIndex : clic/tap
+  // (reste affiché, fonctionne aussi sur mobile où il n'y a pas de survol).
+  const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+  const [pinnedBarIndex, setPinnedBarIndex] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -90,6 +103,14 @@ function Analytics() {
 
   const avgDuration = totalDuration / totalSessions;
 
+  // Le tooltip épinglé (clic) prend le dessus sur le survol, pour que la
+  // dernière barre cliquée reste affichée même si la souris part ailleurs.
+  const activeBarIndex = pinnedBarIndex ?? hoveredBarIndex;
+
+  const handleBarClick = (index) => {
+    setPinnedBarIndex((current) => (current === index ? null : index));
+  };
+
   return (
     <div className="analytics-page">
       <h1 className="analytics-title">{t("header.analytics")}</h1>
@@ -129,13 +150,46 @@ function Analytics() {
       <div className="analytics-section">
         <h2>{t("dashboard.progression")}</h2>
         <div className="analytics-chart">
-          {chartSessions.map((s) => (
+          {chartSessions.map((s, index) => (
             <div
               key={s.id}
-              className="analytics-bar"
-              style={{ height: `${((s.duration || 0) / maxDuration) * 100}%` }}
-              title={`${s.title} · ${formatDuration(s.duration)}`}
-            />
+              className="analytics-bar-col"
+              onMouseEnter={() => setHoveredBarIndex(index)}
+              onMouseLeave={() => setHoveredBarIndex(null)}
+            >
+              {activeBarIndex === index && (
+                <div
+                  className={`analytics-bar-tooltip analytics-bar-tooltip--${getTooltipAlignment(index, chartSessions.length)}`}
+                  role="tooltip"
+                >
+                  <span className="analytics-bar-tooltip-title">{s.title}</span>
+                  <span className="analytics-bar-tooltip-duration">
+                    {formatDuration(s.duration)}
+                  </span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="analytics-bar"
+                style={{
+                  height: `${((s.duration || 0) / maxDuration) * 100}%`,
+                }}
+                onClick={() => handleBarClick(index)}
+                aria-label={`${s.title} · ${formatDuration(s.duration)}`}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="analytics-chart-labels">
+          {chartSessions.map((s) => (
+            <span key={s.id} className="analytics-chart-label">
+              {new Date(s.date_start).toLocaleDateString(dateLocale, {
+                day: "2-digit",
+                month: "2-digit",
+              })}
+            </span>
           ))}
         </div>
       </div>
