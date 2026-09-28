@@ -62,6 +62,43 @@
     border-color: var(--accent-start);
 }
 
+.session-form-field--autocomplete {
+    position: relative;
+}
+
+.session-form-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: var(--bg-page);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.session-form-suggestion {
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-form-suggestion:hover,
+.session-form-suggestion--active {
+    background: var(--bg-elevated);
+}
+
 .session-form-dynamic {
     border-top: 1px solid var(--border-default);
     padding-top: 20px;

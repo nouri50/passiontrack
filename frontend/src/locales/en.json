@@ -91,6 +91,7 @@
         "selectCategory": "Select a category",
         "subcategory": "Subcategory",
         "noneOrOther": "None / Other",
+        "titleSuggestionsLabel": "Previously used titles",
         "titleLabel": "Title *",
         "description": "Description",
         "dateStart": "Start date *",
@@ -245,7 +246,6 @@
         "avatarUploadSuccess": "Profile photo updated.",
         "avatarRemoveSuccess": "Profile photo removed.",
         "avatarErrorGeneric": "Error managing profile photo."
-
     },
     "notifications": {
         "allFilter": "All ({{count}})",
@@ -254,7 +254,6 @@
         "noneYet": "No notifications yet.",
         "markAsRead": "Mark as read"
     },
-
     "chat": {
         "title": "PassionTrack Assistant",
         "open": "Open assistant",

@@ -1,8 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getCategories } from "../services/categoryService";
-import { getSession, updateSession } from "../services/sessionService";
+import {
+  getSession,
+  getSessions,
+  updateSession,
+} from "../services/sessionService";
 import useToastStore from "../stores/toastStore";
 import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/SessionForm.css";
@@ -42,6 +46,12 @@ function SessionEdit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Titres déjà utilisés dans la catégorie sélectionnée, pour l'autocomplétion
+  // du champ Titre (évite de retaper des titres similaires d'une session à l'autre).
+  const [pastSessions, setPastSessions] = useState([]);
+  const [showTitleSuggestions, setShowTitleSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
   useEffect(() => {
     async function load() {
       try {
@@ -72,6 +82,34 @@ function SessionEdit() {
     }
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (!categoryId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadPastSessions() {
+      try {
+        // Sans "page" : renvoie le tableau complet (comportement historique
+        // de l'API), filtré côté serveur par catégorie. On ne s'en sert que
+        // pour construire la liste de titres déjà utilisés.
+        const data = await getSessions({ category_id: categoryId });
+        if (!cancelled) {
+          setPastSessions(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadPastSessions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryId]);
 
   const computedDuration = (() => {
     if (!dateStart || !dateEnd) return "";
@@ -107,9 +145,75 @@ function SessionEdit() {
     ? selectedCategory.metadata.subcategories
     : [];
 
+  // Titres uniques déjà utilisés, filtrés par sous-catégorie quand une est
+  // sélectionnée, et sans la session actuellement en cours d'édition (sinon
+  // elle apparaîtrait dans sa propre liste de suggestions).
+  const titleSuggestions = useMemo(() => {
+    if (!categoryId) return [];
+    const seen = new Set();
+    const suggestions = [];
+    for (const s of pastSessions) {
+      if (String(s.id) === String(id)) continue;
+      if (subcategory && (s.subcategory || "") !== subcategory) continue;
+      const value = (s.title || "").trim();
+      if (!value || seen.has(value.toLowerCase())) continue;
+      seen.add(value.toLowerCase());
+      suggestions.push(value);
+    }
+    return suggestions;
+  }, [pastSessions, subcategory, categoryId, id]);
+
+  // Filtrées en plus par ce que l'utilisateur a déjà tapé.
+  const filteredTitleSuggestions = useMemo(() => {
+    const query = title.trim().toLowerCase();
+    const base = query
+      ? titleSuggestions.filter((value) => value.toLowerCase().includes(query))
+      : titleSuggestions;
+    return base.slice(0, 8);
+  }, [titleSuggestions, title]);
+
   const handleExtraChange = (fieldLabel, value) => {
     const key = slugifyKey(fieldLabel);
     setExtraData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleTitleFocus = () => {
+    setShowTitleSuggestions(true);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleTitleBlur = () => {
+    // Petit délai pour laisser le clic sur une suggestion se déclencher
+    // avant la fermeture ; le onMouseDown de la suggestion couvre le cas normal.
+    window.setTimeout(() => setShowTitleSuggestions(false), 150);
+  };
+
+  const handleSelectSuggestion = (value) => {
+    setTitle(value);
+    setShowTitleSuggestions(false);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleTitleKeyDown = (e) => {
+    if (!showTitleSuggestions || filteredTitleSuggestions.length === 0) {
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev < filteredTitleSuggestions.length - 1 ? prev + 1 : 0,
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredTitleSuggestions.length - 1,
+      );
+    } else if (e.key === "Enter" && activeSuggestionIndex >= 0) {
+      e.preventDefault();
+      handleSelectSuggestion(filteredTitleSuggestions[activeSuggestionIndex]);
+    } else if (e.key === "Escape") {
+      setShowTitleSuggestions(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -257,15 +361,44 @@ function SessionEdit() {
           </div>
         )}
 
-        <div className="session-form-field">
+        <div className="session-form-field session-form-field--autocomplete">
           <label htmlFor="title">{t("sessionForm.titleLabel")}</label>
           <input
             id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onFocus={handleTitleFocus}
+            onBlur={handleTitleBlur}
+            onKeyDown={handleTitleKeyDown}
+            autoComplete="off"
             required
           />
+          {showTitleSuggestions && filteredTitleSuggestions.length > 0 && (
+            <ul
+              className="session-form-suggestions"
+              role="listbox"
+              aria-label={t("sessionForm.titleSuggestionsLabel")}
+            >
+              {filteredTitleSuggestions.map((value, index) => (
+                <li
+                  key={value}
+                  role="option"
+                  aria-selected={index === activeSuggestionIndex}
+                  className={
+                    "session-form-suggestion" +
+                    (index === activeSuggestionIndex
+                      ? " session-form-suggestion--active"
+                      : "")
+                  }
+                  onMouseDown={() => handleSelectSuggestion(value)}
+                  onMouseEnter={() => setActiveSuggestionIndex(index)}
+                >
+                  {value}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="session-form-field">

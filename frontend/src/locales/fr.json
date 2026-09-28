@@ -91,6 +91,7 @@
         "selectCategory": "Sélectionne une catégorie",
         "subcategory": "Sous-catégorie",
         "noneOrOther": "Aucune / Autre",
+        "titleSuggestionsLabel": "Titres déjà utilisés",
         "titleLabel": "Titre *",
         "description": "Description",
         "dateStart": "Date de début *",
@@ -252,7 +253,7 @@
         "noneYet": "Aucune notification pour le moment.",
         "markAsRead": "Marquer comme lu"
     },
-     "chat": {
+    "chat": {
         "title": "Assistant PassionTrack",
         "open": "Ouvrir l'assistant",
         "close": "Fermer l'assistant",
@@ -266,7 +267,6 @@
         "suggestion3": "Quelle est ma dernière session ?",
         "suggestion4": "Combien d'heures j'ai cumulées au total ?"
     },
-
     "register": {
         "subtitle": "Commence à suivre tes passions avec PassionTrack.",
         "confirmPasswordLabel": "Confirmer le mot de passe",
