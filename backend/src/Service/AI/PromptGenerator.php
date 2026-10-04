@@ -260,8 +260,15 @@ class PromptGenerator
 
     /**
      * Seuils Landing Rate calculés en dur.
-     * - Avion de ligne / défaut et Aviation générale : bornes issues des critères de
-     *   certification commerciale (atterrissage dur au-delà de -400/-600 fpm selon les sources).
+     * - Avion de ligne / défaut : bornes issues des critères de certification
+     *   commerciale (atterrissage dur au-delà de -400/-600 fpm selon les sources).
+     * - Aviation générale : seuil "bon" remonté à -200 fpm (au lieu de -150)
+     *   après vérification — les guides de référence pour avions légers
+     *   (PilotLeague, FlyAwaySimulation) placent la zone "normal/acceptable"
+     *   jusqu'à environ -180/-250 fpm pour ce type d'appareil, et les notations
+     *   internes du simulateur ("Perfect") confirment qu'un atterrissage à
+     *   -150/-200 fpm reste excellent sur un appareil léger — -150 était trop
+     *   strict et classait en "ferme" des atterrissages en réalité très bons.
      * - Hélicoptère : PAS de verdict calculé ici. Aucune norme fiable trouvée pour
      *   un seuil fpm isolé sur hélicoptère (l'évaluation réelle porte sur la stabilité/dérive,
      *   pas uniquement la vitesse verticale). Le cas hélicoptère est traité uniquement en
@@ -281,7 +288,7 @@ class PromptGenerator
         }
 
         [$goodBound, $firmBound] = match ($aircraftType) {
-            'Aviation générale' => [-150, -300],
+            'Aviation générale' => [-200, -300],
             default => [-250, -400],
         };
 
