@@ -351,6 +351,21 @@ class PromptGenerator
                     $verdict['gforce_verdict']
                 );
             }
+
+            $severeAspects = [];
+            if ($verdict['rate_verdict'] !== 'bon (atterrissage doux)') {
+                $severeAspects[] = sprintf("le Landing Rate (verdict « %s »)", $verdict['rate_verdict']);
+            }
+            if ($verdict['gforce_verdict'] !== null && $verdict['gforce_verdict'] !== 'bon (impact vertical doux)') {
+                $severeAspects[] = sprintf("le Landing Gforce (verdict « %s »)", $verdict['gforce_verdict']);
+            }
+
+            if (!empty($severeAspects)) {
+                $baseContext .= sprintf(
+                    " CONSIGNE DE CLASSIFICATION IMPORTANTE : le verdict officiel n'est PAS le meilleur niveau possible pour %s. CE(S) PARAMÈTRE(S) DOIT/DOIVENT être présenté(s) dans 'weaknesses' (point faible), JAMAIS dans 'strengths' (point fort) — même si la mission a globalement été réussie (bon score, grade élevé, autres paramètres bons) : la réussite globale d'une mission et la qualité d'un paramètre d'atterrissage précis sont deux choses différentes, ne confonds pas les deux. Si un AUTRE paramètre de cette même catégorie (Landing Rate ou Landing Gforce) a, lui, le verdict « bon », tu peux le présenter comme point fort, mais uniquement lui, pas celui au verdict dégradé.",
+                    implode(' et ', $severeAspects)
+                );
+            }
         }
 
         if ($this->hadGoAround($data)) {
