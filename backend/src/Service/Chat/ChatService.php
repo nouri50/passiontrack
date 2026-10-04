@@ -54,7 +54,7 @@ class ChatService
 
         $prompt .= " Tu ne connais QUE les sessions listées explicitement ci-dessus (les plus récentes) et les totaux agrégés donnés — tu n'as PAS accès au détail des autres sessions. Si on te demande la liste complète des sessions, l'historique complet, ou des sessions au-delà de celles listées ci-dessus, N'INVENTE JAMAIS de sessions supplémentaires (même avec des dates ou des titres plausibles) : dis clairement que tu n'as accès qu'aux sessions les plus récentes et aux totaux, pas au détail de l'historique complet, et invite à consulter la page \"Sessions\" de l'application pour voir son historique complet (PAS pour trouver de nouvelles simulations, voir la précision ci-dessus).";
 
-        $prompt .= " Quand une session listée ci-dessus a des points faibles identifiés entre crochets, ce sont des points faibles DÉJÀ ÉTABLIS par l'analyse IA détaillée de cette session précise (donnée de référence, pas une invention de ta part) : tu peux t'appuyer dessus si la question posée porte sur la progression ou les points à améliorer, mais ne les recalcule pas, ne les invente pas pour une session qui n'en a pas listé, et ne les mentionne que si c'est pertinent pour la question — ne récite pas une liste de points faibles si l'utilisateur ne parle pas de progression ou d'amélioration. RÈGLE DE VOCABULAIRE ABSOLUE SUR CES POINTS FAIBLES : reprends-les avec EXACTEMENT les mêmes termes techniques que ceux fournis, en adaptant seulement le ton pour que ça sonne naturel à l'oral — INTERDICTION ABSOLUE de remplacer un terme technique par un autre que tu juges équivalent ou que tu inventes (par exemple, ne transforme JAMAIS un « Landing Rate élevé » en « taux de décrochage » ou « décrochage » : un décrochage est un phénomène aérodynamique totalement différent d'une vitesse verticale élevée à l'atterrissage, et cette confusion est une erreur factuelle grave, pas une simple reformulation). Si un terme technique fourni ne t'est pas familier, cite-le TEL QUEL plutôt que de le remplacer par ta propre interprétation.";
+        $prompt .= " Quand une session listée ci-dessus a des points faibles identifiés entre crochets, ce sont des points faibles DÉJÀ ÉTABLIS par l'analyse IA détaillée de cette session précise (donnée de référence, pas une invention de ta part) : tu peux t'appuyer dessus si la question posée porte sur la progression ou les points à améliorer, mais ne les recalcule pas, ne les invente pas pour une session qui n'en a pas listé, et ne les mentionne que si c'est pertinent pour la question — ne récite pas une liste de points faibles si l'utilisateur ne parle pas de progression ou d'amélioration. RÈGLE DE VOCABULAIRE ABSOLUE SUR CES POINTS FAIBLES : reprends-les avec EXACTEMENT les mêmes termes techniques que ceux fournis, en adaptant seulement le ton pour que ça sonne naturel à l'oral — INTERDICTION ABSOLUE de remplacer un terme technique par un autre que tu juges équivalent ou que tu inventes (par exemple, ne transforme JAMAIS un « Landing Rate élevé » en « taux de décrochage » ou « décrochage » : un décrochage est un phénomène aérodynamique totalement différent d'une vitesse verticale élevée à l'atterrissage, et cette confusion est une erreur factuelle grave, pas une simple reformulation). Si un terme technique fourni ne t'est pas familier, cite-le TEL QUEL plutôt que de le remplacer par ta propre interprétation. RÈGLE STRICTE D'ATTRIBUTION QUAND PLUSIEURS SESSIONS SONT LISTÉES : chaque point faible entre crochets n'appartient QU'À la session précise à laquelle il est rattaché dans la liste ci-dessus — INTERDICTION ABSOLUE de l'attribuer à une autre session, y compris la plus récente. POUR TOUTE QUESTION SUR \"TA DERNIÈRE SESSION\" OU \"EN CE MOMENT\" : utilise EXCLUSIVEMENT la phrase dédiée fournie dans le contexte ci-dessus qui commence par « Point faible de ta session la plus récente » (ou « Point(s) faible(s) de ta session la plus récente ») — c'est la SEULE source fiable pour ce type de question, IGNORE les points faibles entre crochets des autres sessions de la liste même s'ils sont juste à côté, ils concernent des sessions antérieures, pas la plus récente. RÈGLE STRICTE SUR LES DATES ET LA DURÉE D'UNE TENDANCE : tu ne vois qu'un échantillon limité des sessions les plus récentes, jamais l'historique complet de l'utilisateur — INTERDICTION ABSOLUE d'affirmer ou de déduire une date de début pour une habitude, une tendance ou un type d'activité (par exemple « depuis le [date] » ou « depuis début [mois] ») à partir des dates listées, car tu ne peux pas savoir si une session plus ancienne, hors de ta vue, existe déjà sur ce même sujet. Si tu veux évoquer une régularité dans le temps, utilise une formulation générale sans date précise (par exemple « ces derniers temps » ou « régulièrement »), ou cite uniquement la date exacte d'UNE session précise que tu nommes explicitement par son titre — jamais une date de \"depuis\" calculée ou déduite.";
 
         if (!empty($history)) {
             $recentHistory = array_slice($history, -self::MAX_HISTORY_TURNS);
@@ -119,7 +119,7 @@ class ChatService
             return $base;
         }, $recentSessions);
 
-        return sprintf(
+        $context = sprintf(
             'Contexte sur les sessions déjà enregistrées par cet utilisateur : %d sessions au total (%.1f heures cumulées), réparties ainsi : %s. Les %d sessions les plus récentes : %s.',
             $totalCount,
             $totalHours,
@@ -127,6 +127,30 @@ class ChatService
             count($recentSessions),
             implode(', ', $recentParts)
         );
+
+        // Phrase dédiée et sans ambiguïté sur LA session la plus récente
+        // (recentSessions[0], déjà triée DESC par date), pour éviter que le
+        // modèle pioche par erreur un point faible d'une AUTRE session de la
+        // liste quand on lui demande "ma dernière session" ou "en ce moment".
+        // Réutilise simplement extractWeaknesses() déjà existant — pas de
+        // nouvelle logique d'analyse, juste une reformulation isolée de la
+        // même donnée pour lever l'ambiguïté côté modèle.
+        $latestSession = $recentSessions[0];
+        $latestWeaknesses = $this->extractWeaknesses($latestSession);
+        $context .= $latestWeaknesses === []
+            ? sprintf(
+                ' Point faible de ta session la plus récente ("%s", du %s) : aucun — tous les paramètres analysés sont bons.',
+                $latestSession->getTitle(),
+                $latestSession->getDateStart()->format('d/m/Y')
+            )
+            : sprintf(
+                ' Point(s) faible(s) de ta session la plus récente ("%s", du %s) : %s.',
+                $latestSession->getTitle(),
+                $latestSession->getDateStart()->format('d/m/Y'),
+                implode('; ', $latestWeaknesses)
+            );
+
+        return $context;
     }
 
     /**
