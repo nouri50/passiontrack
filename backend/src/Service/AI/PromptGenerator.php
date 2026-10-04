@@ -202,7 +202,7 @@ class PromptGenerator
             $parts[] = sprintf("altitude d'interception %.0f ft", $interceptAltitude);
         }
 
-        return "CRITÈRES D'APPROCHE DISPONIBLES : " . implode(', ', $parts) . ". Ces valeurs varient énormément selon le type d'appareil et la procédure : N'INVENTE AUCUN seuil chiffré universel de stabilisation. Commente-les uniquement de façon qualitative (gestion de l'énergie, régularité de la capture du plan de descente), en t'appuyant sur la cohérence avec le reste du vol plutôt que sur un chiffre absolu que tu ne peux pas justifier.";
+        return "CRITÈRES D'APPROCHE DISPONIBLES : " . implode(', ', $parts) . ". Ces valeurs varient énormément selon le type d'appareil et la procédure : N'INVENTE AUCUN seuil chiffré universel de stabilisation. Commente-les uniquement de façon qualitative (gestion de l'énergie, régularité de la capture du plan de descente), en t'appuyant sur la cohérence avec le reste du vol plutôt que sur un chiffre absolu que tu ne peux pas justifier. Si tu inclus un conseil ('tips') sur la gestion de l'énergie ou de l'approche, il doit être CONCRET ET ACTIONNABLE : INTERDICTION d'un intitulé vague et méta du type « conseils de gestion de l'énergie » ou « travailler la gestion de l'énergie en approche », qui ne décrit qu'un sujet sans dire quoi faire. Formule une action réelle et précise, par exemple : réduire les gaz plus tôt en finale pour stabiliser la vitesse avant l'interception du plan de descente, ou maintenir un taux de descente constant dès le point d'interception plutôt que de le corriger tardivement.";
     }
 
     private function extractWeatherContext(array $data): ?string
@@ -318,8 +318,8 @@ class PromptGenerator
         $weatherContext = $this->extractWeatherContext($data);
 
         $baseContext = "RÈGLES STRICTES DE VOCABULAIRE AÉRONAUTIQUE — À RESPECTER IMPÉRATIVEMENT : "
-            . "1. « Landing Rate » = vitesse verticale à l'impact des roues en ft/min (ce n'est NI du freinage NI du décrochage). INTERDICTION ABSOLUE d'employer les mots « freinage » ou « décélération » pour qualifier le Landing Rate ou la vitesse verticale en général. "
-            . "2. « Landing Gforce » = facteur de charge/force d'impact vertical au contact du sol. INTERDICTION ABSOLUE d'employer les mots « freinage », « décélération » ou « virage » pour qualifier le Landing Gforce. "
+            . "1. « Landing Rate » = vitesse verticale à l'impact des roues en ft/min (ce n'est NI du freinage NI du décrochage, NI un facteur de charge). Le freinage (roues, aérofreins) n'existe qu'AU SOL, après le toucher des roues — il n'a AUCUN sens pendant que l'appareil est encore en l'air. INTERDICTION ABSOLUE d'employer les mots « freinage » ou « décélération » pour qualifier le Landing Rate, la vitesse verticale, ou plus largement n'importe quelle phase de vol EN L'AIR (approche, descente, finale), même dans un conseil général sur la gestion de l'énergie. Pour parler de la gestion de la vitesse ou de l'énergie PENDANT le vol (approche, descente), utilise exclusivement des termes corrects comme « réduction des gaz », « réduction de la puissance moteur » ou « gestion de la vitesse en approche » — jamais « freinage » ni « décélération » tant que l'appareil n'a pas touché le sol. INTERDICTION ABSOLUE ÉGALEMENT d'employer les mots « facteur de charge » ou « load factor » pour qualifier le Landing Rate (fpm) — cette expression désigne EXCLUSIVEMENT le Landing Gforce (voir règle 2), jamais une vitesse verticale. "
+            . "2. « Landing Gforce » = facteur de charge/force d'impact vertical au contact du sol, exprimé en G — c'est la SEULE métrique que l'expression « facteur de charge » peut qualifier. INTERDICTION ABSOLUE d'employer les mots « freinage », « décélération » ou « virage » pour qualifier le Landing Gforce. "
             . "3. « Block Time » = durée totale parking à parking. « Flight Time » = durée réelle en l'air. ";
 
         if ($isAutoland) {
