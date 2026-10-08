@@ -417,6 +417,15 @@ class PromptGenerator
         $situationManagement = $this->getSituationManagement($data);
         if ($situationManagement) {
             $baseContext .= " GESTION DE SITUATION DÉCRITE PAR L'UTILISATEUR : « {$situationManagement} ». Commente spécifiquement cette gestion de situation dans l'analyse (en point fort si elle a été bien gérée, en conseil si des pistes d'amélioration existent) — c'est un aspect que l'utilisateur juge important pour ce vol.";
+
+            $hasDegradedLandingVerdict = $verdict !== null && (
+                $verdict['rate_verdict'] !== 'bon (atterrissage doux)'
+                || ($verdict['gforce_verdict'] !== null && $verdict['gforce_verdict'] !== 'bon (impact vertical doux)')
+            );
+
+            if ($hasDegradedLandingVerdict) {
+                $baseContext .= " NUANCE IMPORTANTE SUR CETTE GESTION DE SITUATION : le verdict officiel de l'atterrissage sur ce vol est dégradé (voir verdict Landing Rate/Gforce ci-dessus) — NE présente PAS cette gestion de situation comme un point fort pleinement réussi ou sans réserve, même si l'utilisateur décrit une réaction raisonnable face à un imprévu : le résultat concret (atterrissage « {$verdict['rate_verdict']} ») montre que l'adaptation n'a pas pleinement abouti. Si tu la mentionnes, nuance-la (par exemple : bonne réaction initiale face à l'imprévu, mais l'exécution finale de l'atterrissage reste à améliorer) plutôt que de la présenter comme une réussite sans réserve.";
+            }
         }
 
         $approachContext = $this->extractApproachCriteriaContext($data);
