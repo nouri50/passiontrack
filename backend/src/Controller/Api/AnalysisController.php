@@ -78,6 +78,26 @@ final class AnalysisController extends AbstractController
             }
         }
 
+        // Garde-fou déterministe (3) : les verdicts Landing Rate/Gforce
+        // dégradés ("ferme mais acceptable", "dur", "notable", "important")
+        // sont parfois malgré tout classés par Mistral dans 'strengths' au
+        // lieu de 'weaknesses', même après plusieurs renforcements successifs
+        // et très explicites de la consigne dans PromptGenerator (observé à
+        // plusieurs reprises en test réel — la piste du prompt engineering
+        // seul est épuisée pour ce cas aussi). On corrige après coup plutôt
+        // que de continuer à retoucher le texte du prompt : toute entrée de
+        // 'strengths' reprenant le motif littéral "(verdict officiel : ...)"
+        // que PromptGenerator impose à l'IA de recopier mot pour mot pour un
+        // verdict dégradé est déplacée vers 'weaknesses'. Fiable précisément
+        // parce que ce motif exact est verrouillé en amont par le prompt, ce
+        // qui limite fortement le risque de faux positif.
+        if (is_array($result['content'] ?? null)) {
+            $result['content'] = $this->reclassifyDegradedVerdicts($result['content']);
+            if (isset($result['content']['summary'])) {
+                $result['summary'] = $result['content']['summary'];
+            }
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -211,6 +231,44 @@ final class AnalysisController extends AbstractController
 
         if (isset($content['summary']) && is_string($content['summary']) && preg_match($atcCompliancePattern, $content['summary'])) {
             $content['summary'] = "Vol réalisé avec une réassignation de piste par l'ATC à prendre en compte (incident connu du mode carrière, sans lien avec le pilotage).";
+        }
+
+        return $content;
+    }
+
+    /**
+     * Déplace de 'strengths' vers 'weaknesses' toute entrée mentionnant
+     * explicitement un verdict Landing Rate/Gforce dégradé. S'appuie sur le
+     * motif littéral "(verdict officiel : ...)" que PromptGenerator impose à
+     * l'IA de reprendre mot pour mot pour chaque verdict — fiable ici
+     * précisément parce que ce motif est verrouillé en amont par le prompt,
+     * contrairement à une détection par mots-clés libres qui risquerait des
+     * faux positifs (le mot "important" par exemple est trop courant en
+     * dehors de ce contexte précis pour être détecté seul).
+     */
+    private function reclassifyDegradedVerdicts(array $content): array
+    {
+        if (!isset($content['strengths']) || !is_array($content['strengths'])) {
+            return $content;
+        }
+
+        $degradedPattern = '/\(verdict officiel\s*:\s*(ferme mais acceptable|dur|notable|important)\)/iu';
+
+        $misclassified = [];
+        $content['strengths'] = array_values(array_filter(
+            $content['strengths'],
+            function ($item) use ($degradedPattern, &$misclassified) {
+                if (is_string($item) && preg_match($degradedPattern, $item)) {
+                    $misclassified[] = $item;
+                    return false;
+                }
+                return true;
+            }
+        ));
+
+        if (!empty($misclassified)) {
+            $weaknesses = is_array($content['weaknesses'] ?? null) ? $content['weaknesses'] : [];
+            $content['weaknesses'] = array_values(array_merge($weaknesses, $misclassified));
         }
 
         return $content;
