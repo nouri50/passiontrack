@@ -314,6 +314,20 @@ class PromptGenerator
         ];
     }
 
+    /**
+     * Expose le verdict Landing Rate/Gforce déjà calculé en interne, pour
+     * qu'AnalysisController puisse vérifier après coup qu'un verdict dégradé
+     * n'a pas été totalement omis par l'IA (garde-fou (4)) — sans dupliquer
+     * la logique de seuils une seconde fois ailleurs.
+     */
+    public function computeLandingVerdictForSession(Session $session): ?array
+    {
+        $data = $session->getData();
+        $aircraftType = $this->getAircraftType($data);
+
+        return $this->computeLandingVerdict($data, $aircraftType);
+    }
+
     private function buildReferenceContext(string $category, array $data = [], ?string $technicalIncident = null, ?string $notes = null): ?string
     {
         if ($category !== 'aviation') {
@@ -359,7 +373,7 @@ class PromptGenerator
                 );
             }
 
-            $baseContext .= " INTERDICTION ABSOLUE de remplacer ces mots de verdict par un autre terme que tu juges équivalent ou plus naturel à l'oral, et INTERDICTION ABSOLUE d'en modifier la forme (ajout d'un suffixe, conjugaison, accord différent, dérivé) — en particulier, n'utilise JAMAIS « long »/« longue » NI « durable » pour qualifier le Landing Rate : « long » décrit une distance d'atterrissage (poser loin sur la piste), pas une vitesse verticale à l'impact, et « durable » signifie « qui dure dans le temps / soutenable », un sens totalement différent et sans aucun rapport avec un atterrissage rude. Aucun des deux n'a de sens ici, même si le toucher est effectivement rude. Reprends exactement et MOT POUR MOT le verdict officiel calculé ci-dessus (« bon », « ferme mais acceptable » ou « dur » pour le Landing Rate ; « bon », « notable » ou « important » pour le Landing Gforce), sans y ajouter de suffixe ni le transformer de quelque façon que ce soit, partout où tu le mentionnes (points forts, points faibles, résumé, conseils) — ne le reformule pas, même pour varier le style.";
+            $baseContext .= " INTERDICTION ABSOLUE de remplacer ces mots de verdict par un autre terme que tu juges équivalent ou plus naturel à l'oral, et INTERDICTION ABSOLUE d'en modifier la forme (ajout d'un suffixe, conjugaison, accord différent, dérivé) — en particulier, n'utilise JAMAIS « long »/« longue » NI « durable » pour qualifier le Landing Rate : « long » décrit une distance d'atterrissage (poser loin sur la piste), pas une vitesse verticale à l'impact, et « durable » signifie « qui dure dans le temps / soutenable », un sens totalement différent et sans aucun rapport avec un atterrissage rude. Aucun des deux n'a de sens ici, même si le toucher est effectivement rude. Reprends exactement et MOT POUR MOT le verdict officiel calculé ci-dessus (« bon », « ferme mais acceptable » ou « dur » pour le Landing Rate ; « bon », « notable » ou « important » pour le Landing Gforce), sans y ajouter de suffixe ni le transformer de quelque façon que ce soit, partout où tu le mentionnes (points forts, points faibles, résumé, conseils) — ne le reformule pas, même pour varier le style. INTERDICTION ABSOLUE ÉGALEMENT DE CHANGER LA CATÉGORIE DE VERDICT ELLE-MÊME : il n'existe que trois catégories possibles pour le Landing Rate (« bon », « ferme mais acceptable », « dur ») et trois pour le Landing Gforce (« bon », « notable », « important »). Tu ne dois JAMAIS décider toi-même, à partir de ta propre impression du chiffre brut, laquelle de ces catégories s'applique — même si le chiffre te semble par ailleurs correct, proche d'une autre catégorie, ou si le reste du vol était globalement réussi. La SEULE catégorie valable est celle donnée explicitement ci-dessus comme « verdict officiel » : utilise-la telle quelle, ne la remplace JAMAIS par une catégorie voisine que tu estimerais plus logique, plus flatteuse ou plus cohérente avec le reste de ton analyse. Un chiffre proche d'une limite entre deux catégories (par exemple -260 fpm pour un avion léger, proche du seuil des -200 fpm) reste strictement dans la catégorie officielle calculée ci-dessus, jamais dans la catégorie voisine.";
 
             $severeAspects = [];
             if ($verdict['rate_verdict'] !== 'bon (atterrissage doux)') {
@@ -371,7 +385,7 @@ class PromptGenerator
 
             if (!empty($severeAspects)) {
                 $baseContext .= sprintf(
-                    " CONSIGNE DE CLASSIFICATION IMPORTANTE : le verdict officiel n'est PAS le meilleur niveau possible pour %s. CE(S) PARAMÈTRE(S) DOIT/DOIVENT être présenté(s) dans 'weaknesses' (point faible), JAMAIS dans 'strengths' (point fort) — même si la mission a globalement été réussie (bon score, grade élevé, autres paramètres bons) : la réussite globale d'une mission et la qualité d'un paramètre d'atterrissage précis sont deux choses différentes, ne confonds pas les deux. Si un AUTRE paramètre de cette même catégorie (Landing Rate ou Landing Gforce) a, lui, le verdict « bon », tu peux le présenter comme point fort, mais uniquement lui, pas celui au verdict dégradé.",
+                    " CONSIGNE DE CLASSIFICATION IMPORTANTE : le verdict officiel n'est PAS le meilleur niveau possible pour %s. CE(S) PARAMÈTRE(S) DOIT/DOIVENT être présenté(s) dans 'weaknesses' (point faible), JAMAIS dans 'strengths' (point fort) — même si la mission a globalement été réussie (bon score, grade élevé, autres paramètres bons) : la réussite globale d'une mission et la qualité d'un paramètre d'atterrissage précis sont deux choses différentes, ne confonds pas les deux. ATTENTION PARTICULIÈRE AUX VERDICTS « FERME MAIS ACCEPTABLE » ET « NOTABLE » : ces mots peuvent sonner positifs ou neutres à l'oral (« acceptable », « notable »), mais ce sont quand même des verdicts DÉGRADÉS, pas le meilleur niveau (« bon ») — NE TE LAISSE PAS INFLUENCER par la sonorité plus douce de ces mots, classe-les dans 'weaknesses' exactement comme tu le ferais pour un verdict « dur » ou « important », SANS AUCUNE EXCEPTION liée à leur formulation moins sévère. Si un AUTRE paramètre de cette même catégorie (Landing Rate ou Landing Gforce) a, lui, le verdict « bon », tu peux le présenter comme point fort, mais uniquement lui, pas celui au verdict dégradé.",
                     implode(' et ', $severeAspects)
                 );
             }

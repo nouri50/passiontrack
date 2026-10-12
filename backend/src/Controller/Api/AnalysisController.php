@@ -98,6 +98,23 @@ final class AnalysisController extends AbstractController
             }
         }
 
+        // Garde-fou déterministe (4) : s'assurer qu'un verdict Landing
+        // Rate/Gforce dégradé n'est pas totalement absent de la réponse de
+        // l'IA (ni en point fort, ni en point faible, ni en conseil, ni dans
+        // le résumé) — observé sur une session avec beaucoup de contexte
+        // concurrent (notes détaillées, gestion de situation, alignement
+        // manqué) où le Landing Gforce dégradé a été complètement ignoré
+        // sans explication, alors que le Landing Rate, lui, était bien
+        // mentionné. On ne peut pas reformuler un conseil complet à la
+        // place de l'IA de façon fiable, donc on se contente d'ajouter une
+        // entrée factuelle minimale dans 'weaknesses' si le verdict est
+        // totalement absent du texte généré, plutôt que de laisser la
+        // session sans aucune trace d'un paramètre pourtant dégradé.
+        if (is_array($result['content'] ?? null)) {
+            $verdict = $promptGenerator->computeLandingVerdictForSession($session);
+            $result['content'] = $this->ensureDegradedVerdictsMentioned($result['content'], $verdict);
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -270,6 +287,90 @@ final class AnalysisController extends AbstractController
             $weaknesses = is_array($content['weaknesses'] ?? null) ? $content['weaknesses'] : [];
             $content['weaknesses'] = array_values(array_merge($weaknesses, $misclassified));
         }
+
+        return $content;
+    }
+
+    /**
+     * Concatène tous les champs textuels de la réponse IA (strengths,
+     * weaknesses, tips, predictions, summary) en une seule chaîne, pour
+     * pouvoir chercher si un motif donné apparaît n'importe où dans la
+     * réponse, peu importe le champ où l'IA a choisi de le placer.
+     */
+    private function flattenContentToText(array $content): string
+    {
+        $parts = [];
+
+        foreach (['strengths', 'weaknesses', 'tips', 'predictions'] as $field) {
+            if (isset($content[$field]) && is_array($content[$field])) {
+                foreach ($content[$field] as $item) {
+                    if (is_string($item)) {
+                        $parts[] = $item;
+                    }
+                }
+            }
+        }
+
+        if (isset($content['summary']) && is_string($content['summary'])) {
+            $parts[] = $content['summary'];
+        }
+
+        return implode(' | ', $parts);
+    }
+
+    /**
+     * S'assure qu'un verdict Landing Rate/Gforce dégradé n'est pas totalement
+     * absent de la réponse de l'IA (observé en pratique sur une session avec
+     * beaucoup de contexte concurrent). Cherche le verdict dans TOUS les
+     * champs de texte (pas seulement 'strengths' comme reclassifyDegradedVerdicts
+     * ci-dessus), via un motif élargi qui reconnaît le verdict même sans
+     * l'annotation "(verdict officiel : ...)" complète, puisque l'IA ne la
+     * recopie pas toujours mot pour mot. Si le verdict reste introuvable
+     * malgré tout, on ajoute une entrée factuelle minimale dans 'weaknesses'
+     * plutôt que de laisser le paramètre complètement absent de l'analyse —
+     * on ne tente pas de reformuler un conseil complet à la place de l'IA,
+     * ce ne serait pas fiable.
+     */
+    private function ensureDegradedVerdictsMentioned(array $content, ?array $verdict): array
+    {
+        if ($verdict === null) {
+            return $content;
+        }
+
+        $haystack = $this->flattenContentToText($content);
+        $weaknesses = is_array($content['weaknesses'] ?? null) ? $content['weaknesses'] : [];
+
+        $rateDegraded = $verdict['rate_verdict'] !== 'bon (atterrissage doux)';
+        if ($rateDegraded) {
+            $rateMentioned = (bool) preg_match(
+                '/ferme mais acceptable|(landing rate|atterrissage|vitesse verticale).{0,80}\bdur\b/iu',
+                $haystack
+            );
+            if (!$rateMentioned) {
+                $weaknesses[] = sprintf(
+                    'Landing Rate : %.0f fpm (verdict officiel : %s)',
+                    $verdict['rate'],
+                    $verdict['rate_verdict']
+                );
+            }
+        }
+
+        $gforceDegraded = $verdict['gforce_verdict'] !== null && $verdict['gforce_verdict'] !== 'bon (impact vertical doux)';
+        if ($gforceDegraded) {
+            $gforceMentioned = (bool) preg_match(
+                '/(landing gforce|g-?force|facteur de charge|impact vertical).{0,80}\b(notable|important)\b/iu',
+                $haystack
+            );
+            if (!$gforceMentioned) {
+                $weaknesses[] = sprintf(
+                    'Landing Gforce : %.2f G (verdict officiel : %s)',
+                    $verdict['gforce'],
+                    $verdict['gforce_verdict']
+                );
+            }
+        }
+
+        $content['weaknesses'] = array_values($weaknesses);
 
         return $content;
     }

@@ -54,6 +54,47 @@ final class ChatController extends AbstractController
             return $this->json(['error' => 'CHAT_FAILED'], 502);
         }
 
+        // Garde-fou déterministe : le chat confond parfois un Landing
+        // Rate/Gforce élevé avec un "décrochage" (stall) — une erreur
+        // factuelle grave, pas une simple imprécision de style, déjà
+        // explicitement interdite dans la consigne de ChatService ("ne
+        // transforme JAMAIS un Landing Rate élevé en décrochage") et
+        // pourtant observée en pratique. La réponse du chat étant un texte
+        // libre (pas de champs structurés comme pour l'analyse IA), on
+        // retire la ou les phrases contenant le terme fautif plutôt que de
+        // tenter une réécriture automatique qui risquerait de casser la
+        // grammaire du reste du message.
+        $reply = $this->stripStallConfusion($reply);
+
         return $this->json(['reply' => $reply]);
+    }
+
+    /**
+     * Retire toute phrase mentionnant un "décrochage"/"stall" de la réponse
+     * du chat. Découpe sur la ponctuation de fin de phrase (. ! ?), filtre
+     * les phrases fautives, puis rejoint le reste. Si la confusion occupait
+     * tout le message, retombe sur une réponse sûre plutôt qu'une chaîne
+     * vide.
+     */
+    private function stripStallConfusion(string $reply): string
+    {
+        $stallPattern = '/\b(d[ée]crochage|stall)\b/iu';
+
+        if (!preg_match($stallPattern, $reply)) {
+            return $reply;
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', trim($reply), -1, PREG_SPLIT_NO_EMPTY);
+
+        $cleaned = array_values(array_filter(
+            $sentences,
+            static fn(string $sentence) => !preg_match($stallPattern, $sentence)
+        ));
+
+        $result = implode(' ', $cleaned);
+
+        return $result !== ''
+            ? $result
+            : "Je n'ai pas de point précis fiable à te donner pour l'instant — regarde le détail de ta dernière analyse de session pour plus de précision.";
     }
 }
