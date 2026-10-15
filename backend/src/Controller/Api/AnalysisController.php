@@ -86,11 +86,16 @@ final class AnalysisController extends AbstractController
         // plusieurs reprises en test réel — la piste du prompt engineering
         // seul est épuisée pour ce cas aussi). On corrige après coup plutôt
         // que de continuer à retoucher le texte du prompt : toute entrée de
-        // 'strengths' reprenant le motif littéral "(verdict officiel : ...)"
-        // que PromptGenerator impose à l'IA de recopier mot pour mot pour un
-        // verdict dégradé est déplacée vers 'weaknesses'. Fiable précisément
-        // parce que ce motif exact est verrouillé en amont par le prompt, ce
-        // qui limite fortement le risque de faux positif.
+        // 'strengths' reprenant le motif "verdict officiel : ..." que
+        // PromptGenerator impose à l'IA de recopier mot pour mot pour un
+        // verdict dégradé est déplacée vers 'weaknesses'. Le motif ne dépend
+        // volontairement PAS de la ponctuation exacte autour de lui
+        // (parenthèses, flèche "→", ou rien) — l'IA formule cette annotation
+        // de façon inconsistante selon les sessions (observé en pratique), et
+        // une détection trop stricte sur un seul style de ponctuation laissait
+        // passer les autres variantes. Fiable malgré l'élargissement car
+        // "verdict officiel" reste une expression verrouillée par le prompt,
+        // qui n'a aucune raison d'apparaître ailleurs.
         if (is_array($result['content'] ?? null)) {
             $result['content'] = $this->reclassifyDegradedVerdicts($result['content']);
             if (isset($result['content']['summary'])) {
@@ -110,6 +115,11 @@ final class AnalysisController extends AbstractController
         // entrée factuelle minimale dans 'weaknesses' si le verdict est
         // totalement absent du texte généré, plutôt que de laisser la
         // session sans aucune trace d'un paramètre pourtant dégradé.
+        // Complément observé ensuite : quand le verdict dégradé est absent,
+        // c'est souvent parce que l'IA a affirmé à tort "bon" pour ce même
+        // paramètre ailleurs (points forts) — une contradiction visible dans
+        // l'analyse finale. On retire cette affirmation contradictoire dans
+        // le même mouvement que l'ajout du vrai verdict.
         if (is_array($result['content'] ?? null)) {
             $verdict = $promptGenerator->computeLandingVerdictForSession($session);
             $result['content'] = $this->ensureDegradedVerdictsMentioned($result['content'], $verdict);
@@ -255,13 +265,17 @@ final class AnalysisController extends AbstractController
 
     /**
      * Déplace de 'strengths' vers 'weaknesses' toute entrée mentionnant
-     * explicitement un verdict Landing Rate/Gforce dégradé. S'appuie sur le
-     * motif littéral "(verdict officiel : ...)" que PromptGenerator impose à
+     * explicitement un verdict Landing Rate/Gforce dégradé. S'appuie sur
+     * l'expression "verdict officiel : ..." que PromptGenerator impose à
      * l'IA de reprendre mot pour mot pour chaque verdict — fiable ici
-     * précisément parce que ce motif est verrouillé en amont par le prompt,
-     * contrairement à une détection par mots-clés libres qui risquerait des
-     * faux positifs (le mot "important" par exemple est trop courant en
-     * dehors de ce contexte précis pour être détecté seul).
+     * précisément parce que cette expression est verrouillée en amont par le
+     * prompt, contrairement à une détection par mots-clés libres qui
+     * risquerait des faux positifs (le mot "important" par exemple est trop
+     * courant en dehors de ce contexte précis pour être détecté seul).
+     * Volontairement PAS ancré sur une ponctuation précise autour de
+     * l'expression (parenthèses, flèche...) : l'IA varie ce détail d'une
+     * session à l'autre, donc seule la présence du motif "verdict officiel"
+     * suivi du mot de verdict dégradé compte ici.
      */
     private function reclassifyDegradedVerdicts(array $content): array
     {
@@ -269,7 +283,7 @@ final class AnalysisController extends AbstractController
             return $content;
         }
 
-        $degradedPattern = '/\(verdict officiel\s*:\s*(ferme mais acceptable|dur|notable|important)\)/iu';
+        $degradedPattern = '/verdict officiel\s*:?\s*(ferme mais acceptable|dur|notable|important)\b/iu';
 
         $misclassified = [];
         $content['strengths'] = array_values(array_filter(
@@ -324,12 +338,21 @@ final class AnalysisController extends AbstractController
      * beaucoup de contexte concurrent). Cherche le verdict dans TOUS les
      * champs de texte (pas seulement 'strengths' comme reclassifyDegradedVerdicts
      * ci-dessus), via un motif élargi qui reconnaît le verdict même sans
-     * l'annotation "(verdict officiel : ...)" complète, puisque l'IA ne la
-     * recopie pas toujours mot pour mot. Si le verdict reste introuvable
-     * malgré tout, on ajoute une entrée factuelle minimale dans 'weaknesses'
-     * plutôt que de laisser le paramètre complètement absent de l'analyse —
-     * on ne tente pas de reformuler un conseil complet à la place de l'IA,
-     * ce ne serait pas fiable.
+     * l'annotation "verdict officiel" complète, puisque l'IA ne la recopie
+     * pas toujours mot pour mot. Si le verdict reste introuvable malgré
+     * tout, on ajoute une entrée factuelle minimale dans 'weaknesses' plutôt
+     * que de laisser le paramètre complètement absent de l'analyse — on ne
+     * tente pas de reformuler un conseil complet à la place de l'IA, ce ne
+     * serait pas fiable.
+     *
+     * Complément : quand le verdict dégradé est absent du texte, c'est
+     * souvent parce que l'IA a de nouveau affirmé à tort "bon" pour ce même
+     * paramètre ailleurs (typiquement dans 'strengths') — la même confusion
+     * de catégorie de verdict que le prompt essaie déjà d'empêcher, mais qui
+     * réapparaît parfois malgré tout. Dans ce cas précis, on retire aussi
+     * cette affirmation contradictoire de 'strengths', pour ne pas laisser
+     * cohabiter deux verdicts opposés ("bon" et "ferme mais acceptable" par
+     * exemple) pour le même paramètre dans la même analyse.
      */
     private function ensureDegradedVerdictsMentioned(array $content, ?array $verdict): array
     {
@@ -339,6 +362,7 @@ final class AnalysisController extends AbstractController
 
         $haystack = $this->flattenContentToText($content);
         $weaknesses = is_array($content['weaknesses'] ?? null) ? $content['weaknesses'] : [];
+        $strengths = is_array($content['strengths'] ?? null) ? $content['strengths'] : [];
 
         $rateDegraded = $verdict['rate_verdict'] !== 'bon (atterrissage doux)';
         if ($rateDegraded) {
@@ -352,6 +376,11 @@ final class AnalysisController extends AbstractController
                     $verdict['rate'],
                     $verdict['rate_verdict']
                 );
+
+                $strengths = array_values(array_filter(
+                    $strengths,
+                    static fn($item) => !is_string($item) || !preg_match('/landing rate.{0,40}\bbon\b/iu', $item)
+                ));
             }
         }
 
@@ -367,10 +396,16 @@ final class AnalysisController extends AbstractController
                     $verdict['gforce'],
                     $verdict['gforce_verdict']
                 );
+
+                $strengths = array_values(array_filter(
+                    $strengths,
+                    static fn($item) => !is_string($item) || !preg_match('/(landing gforce|g-?force|facteur de charge).{0,40}\bbon\b/iu', $item)
+                ));
             }
         }
 
         $content['weaknesses'] = array_values($weaknesses);
+        $content['strengths'] = array_values($strengths);
 
         return $content;
     }
