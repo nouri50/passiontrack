@@ -240,6 +240,12 @@
     cursor: not-allowed;
 }
 
+.ai-analyze-btn--secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-strong);
+}
+
 .session-detail-attachment {
     display: flex;
     align-items: center;

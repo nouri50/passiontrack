@@ -185,6 +185,34 @@ final class AnalysisController extends AbstractController
         return $this->json($this->serializeAnalysis($analysis));
     }
 
+    #[Route('/api/sessions/{sessionId}/analysis', name: 'app_api_analysis_delete', methods: ['DELETE'])]
+    public function deleteBySession(int $sessionId, EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $session = $entityManager->getRepository(Session::class)->find($sessionId);
+
+        if (!$session) {
+            return $this->json(['error' => 'SESSION_NOT_FOUND'], 404);
+        }
+
+        if ($session->getUser() !== $user) {
+            return $this->json(['error' => 'ACCESS_DENIED'], 403);
+        }
+
+        $analysis = $entityManager->getRepository(Analysis::class)->findOneBy(['session' => $session]);
+
+        if (!$analysis) {
+            return $this->json(['error' => 'NO_ANALYSIS_FOUND'], 404);
+        }
+
+        $entityManager->remove($analysis);
+        $entityManager->flush();
+
+        return $this->json(['message' => 'Analysis deleted successfully']);
+    }
+
     /**
      * Vérifie si un champ de données commençant par "score" (une fois normalisé)
      * vaut 100. Utilise "commence par" plutôt qu'une égalité stricte car le nom

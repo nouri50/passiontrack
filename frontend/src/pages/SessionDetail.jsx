@@ -14,6 +14,7 @@ import {
 import {
   getSessionAnalysis,
   triggerAnalysis,
+  resetAnalysis,
 } from "../services/analysisService";
 import useToastStore from "../stores/toastStore";
 import { getApiErrorMessage } from "../utils/apiError";
@@ -46,6 +47,9 @@ function SessionDetail() {
   const [analysis, setAnalysis] = useState(null);
   const [analysisMissing, setAnalysisMissing] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisResetting, setAnalysisResetting] = useState(false);
+  const [showResetAnalysisConfirm, setShowResetAnalysisConfirm] =
+    useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [attachmentFile, setAttachmentFile] = useState(null);
@@ -119,6 +123,27 @@ function SessionDetail() {
       );
     } finally {
       setAnalysisLoading(false);
+    }
+  };
+
+  const handleResetAnalysisClick = () => {
+    setShowResetAnalysisConfirm(true);
+  };
+
+  const handleResetAnalysisConfirmed = async () => {
+    setShowResetAnalysisConfirm(false);
+    setAnalysisResetting(true);
+    try {
+      await resetAnalysis(id);
+      setAnalysis(null);
+      setAnalysisMissing(true);
+    } catch (err) {
+      addToast(
+        getApiErrorMessage(err, t, "sessionDetail.errorResettingAnalysis"),
+        "error",
+      );
+    } finally {
+      setAnalysisResetting(false);
     }
   };
 
@@ -513,6 +538,17 @@ function SessionDetail() {
                 </ul>
               </div>
             )}
+
+            <button
+              type="button"
+              className="ai-analyze-btn ai-analyze-btn--secondary"
+              onClick={handleResetAnalysisClick}
+              disabled={analysisResetting}
+            >
+              {analysisResetting
+                ? t("sessionDetail.resettingAnalysis")
+                : t("sessionDetail.resetAnalysis")}
+            </button>
           </div>
         )}
 
@@ -551,6 +587,17 @@ function SessionDetail() {
         cancelLabel={t("common.cancel")}
         onConfirm={handleAttachmentDeleteConfirmed}
         onCancel={() => setShowAttachmentDeleteConfirm(false)}
+        danger
+      />
+
+      <ConfirmModal
+        isOpen={showResetAnalysisConfirm}
+        title={t("sessionDetail.resetAnalysisModalTitle")}
+        message={t("sessionDetail.resetAnalysisConfirm")}
+        confirmLabel={t("sessionDetail.resetAnalysis")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleResetAnalysisConfirmed}
+        onCancel={() => setShowResetAnalysisConfirm(false)}
         danger
       />
     </div>
