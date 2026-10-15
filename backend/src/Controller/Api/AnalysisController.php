@@ -3,6 +3,7 @@
 namespace App\Controller\Api;
 
 use App\Entity\Analysis;
+use App\Entity\Notification;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Service\AI\AIProviderInterface;
@@ -138,12 +139,27 @@ final class AnalysisController extends AbstractController
         $entityManager->persist($analysis);
         $entityManager->flush();
 
+        // Email uniquement pour la toute première analyse de cette session :
+        // au-delà (relance après "Réinitialiser l'analyse", typiquement pour
+        // tester un correctif), on ne veut plus encombrer la boîte mail à
+        // chaque itération. On se base sur l'historique des notifications
+        // 'ai_insight' déjà envoyées pour cette session plutôt que sur
+        // l'existence d'une Analysis précédente, car le reset d'analyse la
+        // supprime mais ne touche pas aux notifications déjà émises — donc
+        // cet historique survit à un reset, contrairement à l'Analysis.
+        // La notification en base (cloche), elle, est toujours créée.
+        $alreadyNotified = $entityManager->getRepository(Notification::class)->findOneBy([
+            'related_session' => $session,
+            'type' => 'ai_insight',
+        ]);
+        $channel = $alreadyNotified ? 'in_app' : 'both';
+
         $notificationService->notify(
             $user,
             'ai_insight',
             'Analyse IA disponible — ' . $session->getTitle(),
             $result['summary'],
-            'both',
+            $channel,
             $session,
             $analysis,
         );
