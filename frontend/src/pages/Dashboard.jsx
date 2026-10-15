@@ -270,9 +270,16 @@ function Dashboard() {
                   <div
                     className="chart-bar"
                     style={{
+                      // Échelle en racine carrée plutôt que linéaire : une
+                      // session très atypique ne doit pas écraser les autres
+                      // barres à une hauteur quasi nulle (voir même logique
+                      // dans Analytics.jsx). La durée exacte reste visible
+                      // via l'attribut title au survol.
                       height: `${Math.max(
                         12,
-                        ((session.duration || 0) / maxDuration) * 100,
+                        (Math.sqrt(session.duration || 0) /
+                          Math.sqrt(maxDuration)) *
+                          100,
                       )}%`,
                     }}
                     title={`${session.title} : ${(

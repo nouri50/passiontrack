@@ -173,7 +173,12 @@ function Analytics() {
                 type="button"
                 className="analytics-bar"
                 style={{
-                  height: `${((s.duration || 0) / maxDuration) * 100}%`,
+                  // Échelle en racine carrée plutôt que linéaire : une session
+                  // très atypique (ex. vol mis en pause toute une nuit, durée
+                  // réelle démesurée) ne doit pas écraser toutes les autres
+                  // barres à une hauteur quasi nulle. La durée exacte reste
+                  // disponible via le tooltip au survol/clic.
+                  height: `${(Math.sqrt(s.duration || 0) / Math.sqrt(maxDuration)) * 100}%`,
                 }}
                 onClick={() => handleBarClick(index)}
                 aria-label={`${s.title} · ${formatDuration(s.duration)}`}
