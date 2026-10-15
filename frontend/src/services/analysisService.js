@@ -9,3 +9,8 @@ export const triggerAnalysis = async (sessionId) => {
     const { data } = await api.post(`/sessions/${sessionId}/analyze`);
     return data;
 };
+
+export const resetAnalysis = async (sessionId) => {
+    const { data } = await api.delete(`/sessions/${sessionId}/analysis`);
+    return data;
+};
