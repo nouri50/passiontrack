@@ -233,6 +233,65 @@ class PromptGenerator
     }
 
     /**
+     * Croise la piste d'arrivée (champ dynamique libre, créé par l'utilisateur
+     * via /categories) avec un éventuel champ vent déjà détecté par
+     * extractWeatherContext(), pour que l'IA puisse nuancer son évaluation de
+     * L'ATTERRISSAGE uniquement (jamais le départ) si le vent était mal
+     * orienté par rapport à cette piste précise. Reste volontairement
+     * qualitatif : on ne connaît ni l'orientation exacte de la piste en
+     * degrés ni la direction précise du vent, donc impossible de calculer une
+     * composante de vent traversier chiffrée de façon fiable — l'IA doit
+     * explicitement s'en abstenir plutôt que d'inventer un chiffre.
+     */
+    private function extractLandingRunwayWindContext(array $data): ?string
+    {
+        $runwayCandidates = [
+            "piste arrivée", "piste d'arrivée", "piste arrivee", "piste d'arrivee",
+            "piste arrivé", "piste d'arrivé", "piste atterrissage", "landing runway",
+        ];
+        $windCandidates = ['vent', 'wind', 'vent traversier', 'crosswind'];
+
+        $runway = null;
+        $wind = null;
+
+        foreach ($data as $key => $value) {
+            if ($value === null || $value === '' || $value === false) {
+                continue;
+            }
+
+            $normalizedKey = $this->normalizeKey((string) $key);
+
+            if ($runway === null) {
+                foreach ($runwayCandidates as $candidate) {
+                    if ($normalizedKey === $this->normalizeKey($candidate)) {
+                        $runway = (string) $value;
+                        break;
+                    }
+                }
+            }
+
+            if ($wind === null) {
+                foreach ($windCandidates as $candidate) {
+                    if ($normalizedKey === $this->normalizeKey($candidate)) {
+                        $wind = (string) $value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($runway === null || $wind === null) {
+            return null;
+        }
+
+        return sprintf(
+            "PISTE D'ATTERRISSAGE ET VENT : atterrissage effectué piste %s, avec un vent renseigné : \"%s\". Mets ces deux informations en relation UNIQUEMENT pour évaluer l'ATTERRISSAGE (jamais le décollage/départ) : si le vent était fort, en rafales, ou mal orienté par rapport à cette piste (vent de travers ou arrière notable), considère que cela a pu rendre l'atterrissage plus difficile — valorise d'autant plus une bonne performance dans ce cas, ou nuance une performance dégradée en expliquant ce facteur externe plutôt que de l'attribuer uniquement au pilotage. Ne calcule et n'invente AUCUNE composante de vent traversier chiffrée (en kt ou en %%) : tu ne connais ni l'orientation exacte de la piste en degrés ni la direction précise du vent en degrés, reste donc strictement qualitatif sur ce point.",
+            $runway,
+            $wind
+        );
+    }
+
+    /**
      * Cherche un champ de données "Incident technique" (select) et retourne sa
      * valeur si elle indique un incident réel (pas vide, pas "Aucun"/"None").
      * Champ à créer manuellement via /categories si pas encore présent —
@@ -337,6 +396,7 @@ class PromptGenerator
         $aircraftType = $this->getAircraftType($data);
         $isAutoland = $this->isAutoland($data);
         $weatherContext = $this->extractWeatherContext($data);
+        $runwayWindContext = $this->extractLandingRunwayWindContext($data);
 
         $baseContext = "RÈGLES STRICTES DE VOCABULAIRE AÉRONAUTIQUE — À RESPECTER IMPÉRATIVEMENT : "
             . "1. « Landing Rate » = vitesse verticale à l'impact des roues en ft/min (ce n'est NI du freinage NI du décrochage, NI un facteur de charge). Le freinage (roues, aérofreins) n'existe qu'AU SOL, après le toucher des roues — il n'a AUCUN sens pendant que l'appareil est encore en l'air. INTERDICTION ABSOLUE d'employer les mots « freinage » ou « décélération » pour qualifier le Landing Rate, la vitesse verticale, ou plus largement n'importe quelle phase de vol EN L'AIR (approche, descente, finale), même dans un conseil général sur la gestion de l'énergie. Pour parler de la gestion de la vitesse ou de l'énergie PENDANT le vol (approche, descente), utilise exclusivement des termes corrects comme « réduction des gaz », « réduction de la puissance moteur » ou « gestion de la vitesse en approche » — jamais « freinage » ni « décélération » tant que l'appareil n'a pas touché le sol. INTERDICTION ABSOLUE ÉGALEMENT d'employer les mots « facteur de charge » ou « load factor » pour qualifier le Landing Rate (fpm) — cette expression désigne EXCLUSIVEMENT le Landing Gforce (voir règle 2), jamais une vitesse verticale. "
@@ -349,6 +409,10 @@ class PromptGenerator
 
         if ($weatherContext) {
             $baseContext .= $weatherContext . " ";
+        }
+
+        if ($runwayWindContext) {
+            $baseContext .= $runwayWindContext . " ";
         }
 
         $baseContext .= match ($aircraftType) {
