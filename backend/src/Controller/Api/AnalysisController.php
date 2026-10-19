@@ -126,6 +126,19 @@ final class AnalysisController extends AbstractController
             $result['content'] = $this->ensureDegradedVerdictsMentioned($result['content'], $verdict);
         }
 
+        // Garde-fou déterministe (5) : voir stripSpeculativeIncidentWeakness()
+        // ci-dessous — retire un point faible spéculatif attribué à un
+        // incident technique quand l'atterrissage est en réalité bon des
+        // deux côtés (Landing Rate ET Landing Gforce).
+        if (is_array($result['content'] ?? null)) {
+            $verdict = $promptGenerator->computeLandingVerdictForSession($session);
+            $result['content'] = $this->stripSpeculativeIncidentWeakness(
+                $result['content'],
+                $this->hasTechnicalIncident($session),
+                $verdict
+            );
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -269,6 +282,31 @@ final class AnalysisController extends AbstractController
         foreach ($session->getData() as $key => $value) {
             if ($normalize((string) $key) === $normalize('Incident technique')) {
                 return $normalize((string) $value) === $normalize("Réassignation de piste par l'ATC");
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Détecte si un "Incident technique" réel est déclaré sur la session
+     * (champ présent, non vide, différent de "Aucun"/"None"/"NA") — même
+     * logique que PromptGenerator::getTechnicalIncident(), dupliquée ici
+     * volontairement (style déjà suivi par isAtcRunwayReassignmentIncident
+     * ci-dessus) pour que ce contrôleur n'ait pas besoin d'exposer le texte
+     * de l'incident lui-même, juste sa présence.
+     */
+    private function hasTechnicalIncident(Session $session): bool
+    {
+        $normalize = static fn(string $s): string => strtolower(str_replace([' ', "'", '_', '-'], '', $s));
+
+        foreach ($session->getData() as $key => $value) {
+            if ($normalize((string) $key) === $normalize('Incident technique')) {
+                if ($value === null || $value === '') {
+                    return false;
+                }
+
+                return !in_array($normalize((string) $value), ['aucun', 'none', 'na'], true);
             }
         }
 
@@ -450,6 +488,47 @@ final class AnalysisController extends AbstractController
 
         $content['weaknesses'] = array_values($weaknesses);
         $content['strengths'] = array_values($strengths);
+
+        return $content;
+    }
+
+    /**
+     * Garde-fou déterministe (5) : retire de 'weaknesses' toute affirmation
+     * spéculative du type « l'incident technique a pu avoir un impact sur la
+     * performance de la session » quand les verdicts Landing Rate/Gforce sont
+     * TOUS LES DEUX "bon" — observé en pratique sur un incident "Freeze
+     * simulateur" (déconnexion autopilote, reprise en main) où l'atterrissage
+     * final restait pourtant bon des deux côtés : l'IA transformait quand
+     * même l'incident en point faible générique, sans dégradation réelle à
+     * l'appui. Un incident technique doit EXPLIQUER une dégradation mesurée
+     * (voir consigne PromptGenerator), pas en devenir une par défaut dès
+     * lors qu'il est déclaré — si rien n'est réellement dégradé, il n'y a
+     * rien à reprocher à la performance. Ne s'applique QUE si un verdict est
+     * réellement dégradé n'existe pas : dès qu'un seul des deux paramètres
+     * est dégradé, on laisse l'IA s'exprimer librement sur l'incident, ce
+     * n'est alors plus spéculatif.
+     */
+    private function stripSpeculativeIncidentWeakness(array $content, bool $hasTechnicalIncident, ?array $verdict): array
+    {
+        if (!$hasTechnicalIncident || !isset($content['weaknesses']) || !is_array($content['weaknesses'])) {
+            return $content;
+        }
+
+        $rateOk = $verdict === null || $verdict['rate_verdict'] === 'bon (atterrissage doux)';
+        $gforceOk = $verdict === null
+            || $verdict['gforce_verdict'] === null
+            || $verdict['gforce_verdict'] === 'bon (impact vertical doux)';
+
+        if (!$rateOk || !$gforceOk) {
+            return $content;
+        }
+
+        $speculativePattern = '/incident.{0,100}(?:a pu|aurait pu|pourrait|peut).{0,30}(?:impact|affect)[a-zéû]*.{0,60}performance/iu';
+
+        $content['weaknesses'] = array_values(array_filter(
+            $content['weaknesses'],
+            static fn($item) => !is_string($item) || !preg_match($speculativePattern, $item)
+        ));
 
         return $content;
     }
