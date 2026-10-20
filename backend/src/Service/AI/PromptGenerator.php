@@ -357,10 +357,14 @@ class PromptGenerator
             default => 'dur',
         };
 
+        // Seuils alignés sur FSHub LRM (bon jusqu'à 1.6 G, dur à partir de
+        // 1.65 G) et MSFS Landing Inspector (acceptable jusqu'à 1.5 G) —
+        // l'ancien seuil à 1.3 G classait en "notable" des atterrissages que
+        // ces deux outils de référence considèrent comme bons (ex. 1.32 G).
         $gforceVerdict = $gforce !== null
             ? match (true) {
-                abs($gforce) <= 1.3 => 'bon (impact vertical doux)',
-                abs($gforce) <= 1.5 => 'notable',
+                abs($gforce) <= 1.5 => 'bon (impact vertical doux)',
+                abs($gforce) <= 2.0 => 'notable',
                 default => 'important',
             }
             : null;
