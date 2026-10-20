@@ -66,6 +66,14 @@ final class ChatController extends AbstractController
         // grammaire du reste du message.
         $reply = $this->stripStallConfusion($reply);
 
+        // Garde-fou déterministe : le chat affirme parfois que la page
+        // "Sessions" aide à trouver/découvrir de nouvelles simulations ou
+        // défis — déjà explicitement interdit dans la consigne de
+        // ChatService ("cette fonctionnalité n'existe pas"), mais observé
+        // malgré tout en pratique. Même principe que stripStallConfusion :
+        // on retire la phrase fautive plutôt que de tenter une réécriture.
+        $reply = $this->stripSessionsPageMisclaim($reply);
+
         return $this->json(['reply' => $reply]);
     }
 
@@ -89,6 +97,38 @@ final class ChatController extends AbstractController
         $cleaned = array_values(array_filter(
             $sentences,
             static fn(string $sentence) => !preg_match($stallPattern, $sentence)
+        ));
+
+        $result = implode(' ', $cleaned);
+
+        return $result !== ''
+            ? $result
+            : "Je n'ai pas de point précis fiable à te donner pour l'instant — regarde le détail de ta dernière analyse de session pour plus de précision.";
+    }
+
+    /**
+     * Retire toute phrase affirmant que la page "Sessions" aide à trouver,
+     * découvrir ou suggérer de nouvelles simulations/défis — cette page
+     * n'affiche QUE les sessions déjà créées par l'utilisateur, ce n'est pas
+     * un catalogue (voir consigne ChatService). Détecte "page"/"Sessions"
+     * suivi (ou précédé) d'un verbe de découverte dans un rayon raisonnable,
+     * dans les deux sens, pour couvrir les deux formulations possibles.
+     */
+    private function stripSessionsPageMisclaim(string $reply): string
+    {
+        $discoveryWords = '(trouver|d[ée]couvrir|suggestions?|nouveaux?\s+d[ée]fis?|nouvelles?\s+simulations?)';
+        $misclaimPattern = '/(?:page.{0,30}sessions.{0,150}' . $discoveryWords
+            . '|' . $discoveryWords . '.{0,150}page.{0,30}sessions)/iu';
+
+        if (!preg_match($misclaimPattern, $reply)) {
+            return $reply;
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', trim($reply), -1, PREG_SPLIT_NO_EMPTY);
+
+        $cleaned = array_values(array_filter(
+            $sentences,
+            static fn(string $sentence) => !preg_match($misclaimPattern, $sentence)
         ));
 
         $result = implode(' ', $cleaned);
