@@ -1,17 +1,23 @@
 FROM php:8.4-cli
 
 # Dépendances système + extensions PHP nécessaires pour Symfony + Doctrine/MySQL
+# (gd : requis par phpoffice/phpspreadsheet, utilisé pour lire les rapports SimBit .xlsx)
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libicu-dev \
     libzip-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
     default-mysql-client \
-    && docker-php-ext-install \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
     pdo \
     pdo_mysql \
     intl \
     zip \
+    gd \
     opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
