@@ -1,0 +1,3 @@
+# Les scripts shell exécutés dans les conteneurs Linux doivent rester en LF,
+# même si Git sous Windows convertit les fins de ligne (sinon : "/bin/sh^M: not found").
+*.sh text eol=lf

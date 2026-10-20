@@ -2,18 +2,24 @@
 
 namespace App\Service\AI;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class OllamaProvider implements AIProviderInterface
 {
-    private const OLLAMA_URL = 'http://127.0.0.1:11434/api/generate';
     private const MODEL = 'mistral';
 
-    public function __construct(private HttpClientInterface $client) {}
+    // URL lue depuis la variable d'environnement OLLAMA_URL (valeur par défaut
+    // dans .env, surchargée dans docker-compose.yml pour joindre l'Ollama de
+    // la machine hôte depuis le conteneur).
+    public function __construct(
+        private HttpClientInterface $client,
+        #[Autowire(env: 'OLLAMA_URL')] private string $ollamaUrl,
+    ) {}
 
     public function analyze(string $prompt): array
     {
-        $response = $this->client->request('POST', self::OLLAMA_URL, [
+        $response = $this->client->request('POST', $this->ollamaUrl, [
             'json' => [
                 'model' => self::MODEL,
                 'prompt' => $prompt,
@@ -55,7 +61,7 @@ class OllamaProvider implements AIProviderInterface
      */
     public function chat(string $prompt): string
     {
-        $response = $this->client->request('POST', self::OLLAMA_URL, [
+        $response = $this->client->request('POST', $this->ollamaUrl, [
             'json' => [
                 'model' => self::MODEL,
                 'prompt' => $prompt,

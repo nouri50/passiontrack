@@ -1,0 +1,78 @@
+services:
+
+  mysql:
+    image: mysql:8.0.39
+    container_name: passiontrack_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: passiontrack
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: passiontrack
+      MYSQL_PASSWORD: passiontrack
+    ports:
+      - "3308:3306"
+    volumes:
+      - passiontrack_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./docker/php
+    container_name: passiontrack_backend
+    restart: unless-stopped
+    ports:
+      - "8002:8000"  # Hôte: 8002 → Conteneur: 8000
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    environment:
+      DATABASE_URL: "mysql://passiontrack:passiontrack@mysql:3306/passiontrack?serverVersion=8.0.39&charset=utf8mb4"
+      APP_ENV: dev
+      FRONTEND_URL: "http://localhost:5175"  # liens dans les e-mails de notification
+      # Ollama tourne sur ta machine (pas dans un conteneur) : 127.0.0.1 depuis le
+      # conteneur ne la joint pas, on passe par host.docker.internal.
+      OLLAMA_URL: "http://host.docker.internal:11434/api/generate"
+      # Le serveur PHP intégré est mono-processus par défaut : une analyse IA de
+      # plusieurs minutes bloquerait toutes les autres requêtes (login, dashboard…).
+      PHP_CLI_SERVER_WORKERS: "4"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # nécessaire sous Linux, sans effet sous Windows/Mac
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./docker/node
+    container_name: passiontrack_frontend
+    restart: unless-stopped
+    ports:
+      - "5175:5173"  # Hôte: 5175 → Conteneur: 5173
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    working_dir: /app
+    environment:
+      VITE_API_URL: "http://localhost:8002/api"  # URL de l'API vue depuis le navigateur
+    depends_on:
+      - backend
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: passiontrack_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - mysql
+
+volumes:
+  passiontrack_mysql_data:
