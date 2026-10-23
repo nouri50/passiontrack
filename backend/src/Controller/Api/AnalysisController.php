@@ -152,6 +152,14 @@ final class AnalysisController extends AbstractController
             }
         }
 
+        // Garde-fou déterministe (7) : voir fixHardLandingWording().
+        if (is_array($result['content'] ?? null)) {
+            $result['content'] = $this->fixHardLandingWording($result['content']);
+        }
+        if (is_string($result['summary'] ?? null)) {
+            $result['summary'] = $this->fixHardLandingText($result['summary']);
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -639,6 +647,44 @@ final class AnalysisController extends AbstractController
             }
 
             $content['tips'] = $tips;
+        }
+
+        return $content;
+    }
+
+    /**
+     * Corrige une faute de langue observée du modèle : « atterrissage
+     * durable » (au lieu de « atterrissage dur »), qui ne veut rien dire.
+     */
+    private function fixHardLandingText(string $text): string
+    {
+        // Le premier caractère est capturé pour conserver la majuscule éventuelle.
+        return preg_replace_callback(
+            '/\b(a)(tterrissage)(s?)\s+durables?\b/iu',
+            static fn(array $m): string => $m[1] . $m[2] . $m[3] . ($m[3] === '' ? ' dur' : ' durs'),
+            $text
+        ) ?? $text;
+    }
+
+    /**
+     * Garde-fou déterministe (7) : applique fixHardLandingText() au résumé et
+     * aux listes de l'analyse.
+     */
+    private function fixHardLandingWording(array $content): array
+    {
+        foreach (['summary', 'strengths', 'weaknesses', 'tips', 'predictions'] as $field) {
+            if (!isset($content[$field])) {
+                continue;
+            }
+
+            if (is_string($content[$field])) {
+                $content[$field] = $this->fixHardLandingText($content[$field]);
+            } elseif (is_array($content[$field])) {
+                $content[$field] = array_map(
+                    fn($item) => is_string($item) ? $this->fixHardLandingText($item) : $item,
+                    $content[$field]
+                );
+            }
         }
 
         return $content;
