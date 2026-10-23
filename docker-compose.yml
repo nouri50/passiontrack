@@ -58,6 +58,7 @@ services:
     working_dir: /app
     environment:
       VITE_API_URL: "http://localhost:8002/api"  # URL de l'API vue depuis le navigateur
+      WATCH_POLLING: "true"  # Vite vérifie les fichiers à intervalle régulier (sinon il ne voit pas les git pull sous Windows)
     depends_on:
       - backend
 
