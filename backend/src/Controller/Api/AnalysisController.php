@@ -474,7 +474,7 @@ final class AnalysisController extends AbstractController
         $rateDegraded = $verdict['rate_verdict'] !== 'bon (atterrissage doux)';
         if ($rateDegraded) {
             $rateMentioned = (bool) preg_match(
-                '/ferme mais acceptable|(landing rate|atterrissage|vitesse verticale).{0,80}\bdur\b/iu',
+                '/ferme mais acceptable|landing rate|vitesse verticale|\bfpm\b/iu',
                 $haystack
             );
             if (!$rateMentioned) {
