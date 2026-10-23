@@ -68,7 +68,7 @@ function SessionEdit() {
         setDateStart(toDatetimeLocal(sessionData.date_start));
         setDateEnd(toDatetimeLocal(sessionData.date_end));
         setDurationOverride(
-          sessionData.duration ? String(sessionData.duration) : "",
+          sessionData.duration ? String(sessionData.duration) : null,
         );
         setNotes(sessionData.notes || "");
         setExtraData(sessionData.data || {});
@@ -119,10 +119,16 @@ function SessionEdit() {
     return diffSeconds > 0 ? diffSeconds : "";
   })();
 
+  // Valeur envoyée à l'API : la durée saisie, sinon celle calculée depuis les dates.
   const duration =
     durationOverride !== null && durationOverride !== ""
       ? durationOverride
       : computedDuration;
+
+  // Valeur affichée dans le champ : on laisse l'utilisateur le vider pour
+  // retaper une durée (sinon il revient aussitôt à la valeur calculée).
+  const displayedDuration =
+    durationOverride !== null ? durationOverride : computedDuration;
 
   const selectedCategory = categories.find(
     (c) => String(c.id) === String(categoryId),
@@ -440,7 +446,7 @@ function SessionEdit() {
           <input
             id="duration"
             type="number"
-            value={duration}
+            value={displayedDuration}
             onChange={(e) => setDurationOverride(e.target.value)}
           />
         </div>
