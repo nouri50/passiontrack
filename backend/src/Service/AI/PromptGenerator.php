@@ -483,6 +483,10 @@ class PromptGenerator
 
         if ($technicalIncident !== null) {
             $normalizedIncident = $this->normalizeKey($technicalIncident);
+            if (str_contains($normalizedIncident, 'freeze')) {
+                $baseContext .= " FREEZE DU SIMULATEUR DÉCLARÉ : un freeze est un blocage momentané du simulateur lié à l'ordinateur (mémoire, charge, réglages), PAS un défaut de l'avion ni une erreur du pilote. Écris toujours le mot « freeze » tel quel — JAMAIS « gel », « micro-gel » ni une autre traduction — et ne parle JAMAIS de maintenance ni de réparation de l'avion. N'inscris JAMAIS le freeze lui-même dans 'weaknesses' : ce n'est pas un point faible de pilotage. Si les notes indiquent que le pilote a repris la main ou restabilisé l'avion, valorise cette récupération dans 'strengths'. Si tu donnes un conseil à propos du freeze, il porte sur la stabilité du simulateur sur l'ordinateur, sans affirmer la cause exacte.";
+            }
+
             if (str_contains($normalizedIncident, 'visuel') || str_contains($normalizedIncident, 'manuel')) {
                 $baseContext .= " L'incident technique déclaré a nécessité un passage en navigation/pilotage visuel(le) ou manuel(le) : valorise explicitement cette capacité d'adaptation en temps réel, en plus de ne jamais reprocher au pilote la dégradation liée à cet incident (voir consigne dédiée sur l'incident technique).";
             }

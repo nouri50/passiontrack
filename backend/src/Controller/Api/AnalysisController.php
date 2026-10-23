@@ -139,6 +139,19 @@ final class AnalysisController extends AbstractController
             );
         }
 
+        // Garde-fou déterministe (6) : voir neutralizeFreezeContent() — sur un
+        // incident "Freeze simulateur", retire le freeze des points faibles,
+        // corrige la traduction "micro-gel" et remplace un conseil de
+        // "maintenance" absurde par un conseil sur la stabilité du simulateur.
+        if ($this->isSimulatorFreezeIncident($session)) {
+            if (is_array($result['content'] ?? null)) {
+                $result['content'] = $this->neutralizeFreezeContent($result['content']);
+            }
+            if (is_string($result['summary'] ?? null)) {
+                $result['summary'] = $this->fixFreezeWording($result['summary']);
+            }
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -529,6 +542,90 @@ final class AnalysisController extends AbstractController
             $content['weaknesses'],
             static fn($item) => !is_string($item) || !preg_match($speculativePattern, $item)
         ));
+
+        return $content;
+    }
+
+    /**
+     * Détecte l'incident "Freeze simulateur" (valeur de la liste déroulante
+     * "Incident technique") — même normalisation que hasTechnicalIncident().
+     */
+    private function isSimulatorFreezeIncident(Session $session): bool
+    {
+        $normalize = static fn(string $s): string => strtolower(str_replace([' ', "'", '_', '-'], '', $s));
+
+        foreach ($session->getData() as $key => $value) {
+            if ($normalize((string) $key) === $normalize('Incident technique')) {
+                return str_contains($normalize((string) $value), 'freeze');
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Corrige la mauvaise traduction de "freeze" par le modèle ("micro-gel",
+     * "gel du simulateur").
+     */
+    private function fixFreezeWording(string $text): string
+    {
+        $text = preg_replace('/\bmicro[- ]?gels?\b/iu', 'micro-freeze', $text) ?? $text;
+
+        return preg_replace('/\bgel (?:du|de) (?:simulateur|sim)\b/iu', 'freeze du simulateur', $text) ?? $text;
+    }
+
+    /**
+     * Garde-fou déterministe (6) pour l'incident "Freeze simulateur" :
+     * - retire de 'weaknesses' toute phrase qui fait du freeze lui-même un
+     *   point faible (ce n'est pas une erreur de pilotage), SAUF si elle
+     *   parle aussi de l'atterrissage (Landing Rate/G-force) — on garde alors
+     *   la phrase plutôt que de perdre un vrai verdict dégradé ;
+     * - corrige "micro-gel" → "micro-freeze" partout ;
+     * - remplace un conseil de "maintenance"/"réparation" (sans objet pour
+     *   un freeze du simulateur) par un conseil sur la stabilité du sim.
+     */
+    private function neutralizeFreezeContent(array $content): array
+    {
+        $freezePattern = '/freeze|\bmicro[- ]?gels?\b|\bgel (?:du|de) (?:simulateur|sim)\b/iu';
+        $landingPattern = '/landing|g-?force|atterriss/iu';
+
+        foreach (['summary', 'strengths', 'weaknesses', 'tips'] as $field) {
+            if (!isset($content[$field])) {
+                continue;
+            }
+
+            $content[$field] = is_array($content[$field])
+                ? array_map(fn($item) => is_string($item) ? $this->fixFreezeWording($item) : $item, $content[$field])
+                : (is_string($content[$field]) ? $this->fixFreezeWording($content[$field]) : $content[$field]);
+        }
+
+        if (isset($content['weaknesses']) && is_array($content['weaknesses'])) {
+            $content['weaknesses'] = array_values(array_filter(
+                $content['weaknesses'],
+                static fn($item) => !is_string($item)
+                    || !preg_match($freezePattern, $item)
+                    || preg_match($landingPattern, $item)
+            ));
+        }
+
+        if (isset($content['tips']) && is_array($content['tips'])) {
+            $replacement = "Si les freezes se reproduisent, vérifie la charge de ton ordinateur pendant le vol (mémoire, applications ouvertes en arrière-plan, réglages graphiques).";
+            $replaced = false;
+            $tips = [];
+
+            foreach ($content['tips'] as $tip) {
+                if (is_string($tip) && preg_match('/maintenance|r[ée]paration/iu', $tip)) {
+                    if (!$replaced) {
+                        $tips[] = $replacement;
+                        $replaced = true;
+                    }
+                    continue;
+                }
+                $tips[] = $tip;
+            }
+
+            $content['tips'] = $tips;
+        }
 
         return $content;
     }
