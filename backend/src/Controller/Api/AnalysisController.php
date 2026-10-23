@@ -587,7 +587,10 @@ final class AnalysisController extends AbstractController
     private function neutralizeFreezeContent(array $content): array
     {
         $freezePattern = '/freeze|\bmicro[- ]?gels?\b|\bgel (?:du|de) (?:simulateur|sim)\b/iu';
-        $landingPattern = '/landing|g-?force|atterriss/iu';
+        // On ne garde une phrase mêlant freeze et atterrissage que si elle porte
+        // un vrai verdict chiffré (Landing Rate, G-force, fpm) — le simple mot
+        // « atterrissage » ne suffit pas (ex. « Atterrissage avec freeze »).
+        $landingPattern = '/landing|g-?force|\bfpm\b/iu';
 
         foreach (['summary', 'strengths', 'weaknesses', 'tips'] as $field) {
             if (!isset($content[$field])) {
@@ -614,7 +617,12 @@ final class AnalysisController extends AbstractController
             $tips = [];
 
             foreach ($content['tips'] as $tip) {
-                if (is_string($tip) && preg_match('/maintenance|r[ée]paration/iu', $tip)) {
+                // Conseil vide pour un freeze de simulateur : maintenance,
+                // réparation, ou renvoi vers la documentation/le support.
+                if (is_string($tip) && (
+                    preg_match('/maintenance|r[ée]paration/iu', $tip)
+                    || (preg_match($freezePattern, $tip) && preg_match('/documentation|support|contacter|consulter/iu', $tip))
+                )) {
                     if (!$replaced) {
                         $tips[] = $replacement;
                         $replaced = true;
