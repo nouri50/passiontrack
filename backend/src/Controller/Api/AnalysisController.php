@@ -621,7 +621,10 @@ final class AnalysisController extends AbstractController
                 // réparation, ou renvoi vers la documentation/le support.
                 if (is_string($tip) && (
                     preg_match('/maintenance|r[ée]paration/iu', $tip)
-                    || (preg_match($freezePattern, $tip) && preg_match('/documentation|support|contacter|consulter/iu', $tip))
+                    || (
+                        preg_match('/freeze|simulateur|ordinateur|stabilit/iu', $tip)
+                        && preg_match('/documentation|support|contacter|consulter|configuration|syst[èe]me|mises? [àa] jour|logiciel|param[èe]tres/iu', $tip)
+                    )
                 )) {
                     if (!$replaced) {
                         $tips[] = $replacement;
