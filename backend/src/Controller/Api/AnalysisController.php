@@ -455,9 +455,13 @@ final class AnalysisController extends AbstractController
             return $content;
         }
 
-        $haystack = $this->flattenContentToText($content);
         $weaknesses = is_array($content['weaknesses'] ?? null) ? $content['weaknesses'] : [];
         $strengths = is_array($content['strengths'] ?? null) ? $content['strengths'] : [];
+
+        // On ne cherche la mention du verdict que dans les POINTS FAIBLES : un
+        // « Atterrissage dur » dans le résumé ne doit pas empêcher d'afficher
+        // la ligne chiffrée (Landing Rate/G-force) dans les points faibles.
+        $haystack = $this->flattenContentToText(['weaknesses' => $weaknesses]);
 
         $rateDegraded = $verdict['rate_verdict'] !== 'bon (atterrissage doux)';
         if ($rateDegraded) {
@@ -622,8 +626,7 @@ final class AnalysisController extends AbstractController
                 if (is_string($tip) && (
                     preg_match('/maintenance|r[ée]paration/iu', $tip)
                     || (
-                        preg_match('/freeze|simulateur|ordinateur|stabilit/iu', $tip)
-                        && preg_match('/documentation|support|contacter|consulter|configuration|syst[èe]me|mises? [àa] jour|logiciel|param[èe]tres/iu', $tip)
+                        preg_match('/freeze|simulateur|ordinateur|blocages?/iu', $tip)
                     )
                 )) {
                     if (!$replaced) {
