@@ -612,7 +612,7 @@ final class AnalysisController extends AbstractController
         }
 
         if (isset($content['tips']) && is_array($content['tips'])) {
-            $replacement = "Si les freezes se reproduisent, vérifie la charge de ton ordinateur pendant le vol (mémoire, applications ouvertes en arrière-plan, réglages graphiques).";
+            $replacement = "Si les freezes se reproduisent, surveille l'utilisation de la mémoire RAM de ton ordinateur pendant le vol (applications ouvertes en arrière-plan, réglages graphiques du simulateur).";
             $replaced = false;
             $tips = [];
 
