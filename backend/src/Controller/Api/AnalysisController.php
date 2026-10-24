@@ -158,6 +158,12 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->stripCannedApproachSentences($result['summary']);
         }
 
+        // Garde-fou déterministe (10) : voir neutralizeIncidentRestatement().
+        $declaredIncident = $this->getDeclaredIncident($session);
+        if ($declaredIncident !== null && is_array($result['content'] ?? null)) {
+            $result['content'] = $this->neutralizeIncidentRestatement($result['content'], $declaredIncident);
+        }
+
         // Garde-fou déterministe (6) : voir neutralizeFreezeContent() — sur un
         // incident "Freeze simulateur", retire le freeze des points faibles,
         // corrige la traduction "micro-gel" et remplace un conseil de
@@ -829,6 +835,75 @@ final class AnalysisController extends AbstractController
         ));
 
         return $kept === [] ? $text : implode(' ', $kept);
+    }
+
+    /**
+     * Valeur brute du champ "Incident technique" quand un incident réel est
+     * déclaré (hors "Aucun" et hors "Réassignation de piste par l'ATC", qui a
+     * son propre traitement), sinon null.
+     */
+    private function getDeclaredIncident(Session $session): ?string
+    {
+        if (!$this->hasTechnicalIncident($session) || $this->isAtcRunwayReassignmentIncident($session)) {
+            return null;
+        }
+
+        $normalize = static fn(string $s): string => strtolower(str_replace([' ', "'", '_', '-'], '', $s));
+
+        foreach ($session->getData() as $key => $value) {
+            if ($normalize((string) $key) === $normalize('Incident technique')) {
+                return (string) $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Garde-fou déterministe (10) pour un incident technique déclaré :
+     * - retire des points faibles une phrase vide qui ne fait que répéter
+     *   l'incident (« Défaillance technique (Bug) »), sauf si elle porte un
+     *   verdict d'atterrissage chiffré ;
+     * - pour l'incident « Bug » (add-on, appareil), remplace un conseil du
+     *   type « vérifier la configuration du système… » — faux, ce n'est pas un
+     *   réglage de l'utilisateur — par un conseil sur la mise à jour de l'add-on.
+     */
+    private function neutralizeIncidentRestatement(array $content, string $incident): array
+    {
+        $restatement = '/d[ée]faillance|incident technique|\bbug\b|probl[èe]me mat[ée]riel|freeze/iu';
+        $landing = '/landing|g-?force|\bfpm\b/iu';
+
+        if (isset($content['weaknesses']) && is_array($content['weaknesses'])) {
+            $content['weaknesses'] = array_values(array_filter(
+                $content['weaknesses'],
+                static fn($item) => !is_string($item) || !preg_match($restatement, $item) || preg_match($landing, $item)
+            ));
+        }
+
+        $normalized = strtolower(str_replace([' ', "'", '_', '-'], '', $incident));
+        if (str_contains($normalized, 'bug') && isset($content['tips']) && is_array($content['tips'])) {
+            $replacement = "Si le bug se reproduit, vérifie si une mise à jour de l'add-on le corrige.";
+            $replaced = false;
+            $tips = [];
+
+            foreach ($content['tips'] as $tip) {
+                if (is_string($tip)
+                    && preg_match('/configuration|param[èe]tres|mises? [àa] jour|v[ée]rifier/iu', $tip)
+                    && preg_match('/pmdg|add-?on|bug|syst[èe]me|logiciel|appareil/iu', $tip)
+                ) {
+                    if (!$replaced) {
+                        $tips[] = $replacement;
+                        $replaced = true;
+                    }
+                    continue;
+                }
+                $tips[] = $tip;
+            }
+
+            $content['tips'] = $tips;
+        }
+
+        return $content;
     }
 
     private function serializeAnalysis(Analysis $analysis): array
