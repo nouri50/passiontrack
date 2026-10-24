@@ -139,6 +139,17 @@ final class AnalysisController extends AbstractController
             );
         }
 
+        // Garde-fou déterministe (8) : voir correctLandingFigures() — remplace
+        // les chiffres Landing Rate/Gforce cités par l'IA par ceux de la session
+        // (observé : chiffres de la session PRÉCÉDENTE, tirés de l'historique).
+        $landingVerdict = $promptGenerator->computeLandingVerdictForSession($session);
+        if (is_array($result['content'] ?? null)) {
+            $result['content'] = $this->correctLandingFigures($result['content'], $landingVerdict);
+        }
+        if (is_string($result['summary'] ?? null)) {
+            $result['summary'] = $this->correctLandingFiguresInText($result['summary'], $landingVerdict, true);
+        }
+
         // Garde-fou déterministe (6) : voir neutralizeFreezeContent() — sur un
         // incident "Freeze simulateur", retire le freeze des points faibles,
         // corrige la traduction "micro-gel" et remplace un conseil de
@@ -688,6 +699,84 @@ final class AnalysisController extends AbstractController
         }
 
         return $content;
+    }
+
+    /**
+     * Garde-fou déterministe (8) : l'IA cite parfois des chiffres de Landing
+     * Rate / Landing Gforce qui ne sont PAS ceux de la session analysée mais
+     * ceux d'une session précédente de l'historique fourni dans le prompt
+     * (observé : « Landing Rate : -642 fpm » cité pour une session à -233 fpm).
+     * On remplace ces chiffres par les vraies valeurs, sauf si la phrase
+     * compare explicitement à une autre session (précédente, moyenne, record…).
+     * Dans le résumé et les points forts, on retire en plus la mention d'un
+     * paramètre dont le verdict officiel est dégradé : l'IA le présente sinon
+     * comme « bon » (la ligne chiffrée correcte est ajoutée en points faibles).
+     */
+    private function correctLandingFigures(array $content, ?array $verdict): array
+    {
+        if ($verdict === null) {
+            return $content;
+        }
+
+        foreach (['summary', 'strengths', 'weaknesses', 'tips', 'predictions'] as $field) {
+            if (!isset($content[$field])) {
+                continue;
+            }
+
+            $strip = in_array($field, ['summary', 'strengths'], true);
+
+            if (is_string($content[$field])) {
+                $content[$field] = $this->correctLandingFiguresInText($content[$field], $verdict, $strip);
+            } elseif (is_array($content[$field])) {
+                $content[$field] = array_values(array_filter(array_map(
+                    fn($item) => is_string($item) ? $this->correctLandingFiguresInText($item, $verdict, $strip) : $item,
+                    $content[$field]
+                ), static fn($item) => $item !== ''));
+            }
+        }
+
+        return $content;
+    }
+
+    private function correctLandingFiguresInText(string $text, ?array $verdict, bool $stripDegraded): string
+    {
+        if ($verdict === null
+            || preg_match('/pr[ée]c[ée]dent|derni[èe]re session|auparavant|historique|moyenne|record|compar/iu', $text)
+        ) {
+            return $text;
+        }
+
+        $text = preg_replace_callback(
+            '/(landing rate\s*:?\s*)-?\d+(?:[.,]\d+)?(\s*fpm)/iu',
+            static fn(array $m): string => $m[1] . sprintf('%.0f', $verdict['rate']) . $m[2],
+            $text
+        ) ?? $text;
+
+        if ($verdict['gforce'] !== null) {
+            $text = preg_replace_callback(
+                '/(landing g-?force\s*:?\s*)\d+(?:[.,]\d+)?(\s*G\b)/iu',
+                static fn(array $m): string => $m[1] . sprintf('%.2f', $verdict['gforce']) . $m[2],
+                $text
+            ) ?? $text;
+        }
+
+        if ($stripDegraded) {
+            $rateDegraded = $verdict['rate_verdict'] !== 'bon (atterrissage doux)';
+            $gforceDegraded = $verdict['gforce_verdict'] !== null && $verdict['gforce_verdict'] !== 'bon (impact vertical doux)';
+
+            if ($gforceDegraded) {
+                $text = preg_replace('/\s*[,;]?\s*(?:et\s+)?landing g-?force\s*:?\s*[\d.,]+\s*G\b/iu', '', $text) ?? $text;
+            }
+            if ($rateDegraded) {
+                $text = preg_replace('/\s*[,;]?\s*(?:et\s+)?landing rate\s*:?\s*-?[\d.,]+\s*fpm/iu', '', $text) ?? $text;
+            }
+
+            // Nettoyage des parenthèses/virgules laissées par les retraits.
+            $text = preg_replace(['/\(\s*[,;]\s*/u', '/\s*[,;]\s*\)/u', '/\(\s*\)/u', '/\s{2,}/u'], ['(', ')', '', ' '], $text) ?? $text;
+            $text = trim($text);
+        }
+
+        return $text;
     }
 
     private function serializeAnalysis(Analysis $analysis): array
