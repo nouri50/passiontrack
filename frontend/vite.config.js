@@ -12,7 +12,7 @@ export default defineConfig({
       // (défini dans docker-compose.yml) lui fait vérifier les fichiers à
       // intervalle régulier. Sans Docker, la variable n'existe pas : rien ne change.
       usePolling: process.env.WATCH_POLLING === 'true',
-      interval: 300,
+      interval: 1000,
     },
   },
 })
