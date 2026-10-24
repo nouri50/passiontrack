@@ -41,6 +41,12 @@ services:
       PHP_CLI_SERVER_WORKERS: "4"
     extra_hosts:
       - "host.docker.internal:host-gateway"  # nécessaire sous Linux, sans effet sous Windows/Mac
+    # DNS explicites : le DNS par défaut de Docker Desktop échoue parfois
+    # (« Temporary failure in name resolution »), ce qui empêchait l'envoi des
+    # e-mails via smtp.gmail.com.
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       mysql:
         condition: service_healthy
