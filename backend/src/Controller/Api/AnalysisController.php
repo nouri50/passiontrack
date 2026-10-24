@@ -150,6 +150,14 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->correctLandingFiguresInText($result['summary'], $landingVerdict, true);
         }
 
+        // Garde-fou déterministe (9) : voir stripCannedApproachAdvice().
+        if (is_array($result['content'] ?? null)) {
+            $result['content'] = $this->stripCannedApproachAdvice($result['content']);
+        }
+        if (is_string($result['summary'] ?? null)) {
+            $result['summary'] = $this->stripCannedApproachSentences($result['summary']);
+        }
+
         // Garde-fou déterministe (6) : voir neutralizeFreezeContent() — sur un
         // incident "Freeze simulateur", retire le freeze des points faibles,
         // corrige la traduction "micro-gel" et remplace un conseil de
@@ -777,6 +785,50 @@ final class AnalysisController extends AbstractController
         }
 
         return $text;
+    }
+
+    private const CANNED_APPROACH_PATTERN = '/r[ée]duire les gaz plus t[ôo]t|stabiliser la vitesse avant l.interception du plan de descente|maintenir un taux de descente constant d[èe]s le point d.interception/iu';
+
+    /**
+     * Garde-fou déterministe (9) : le modèle recopiait dans presque toutes les
+     * analyses l'ancien exemple de conseil du prompt (« réduire les gaz plus
+     * tôt en finale pour stabiliser la vitesse avant l'interception du plan de
+     * descente »), même sans rapport avec la session. On retire ces conseils
+     * et phrases toutes faites ; l'exemple a aussi été retiré du prompt.
+     */
+    private function stripCannedApproachAdvice(array $content): array
+    {
+        if (isset($content['tips']) && is_array($content['tips'])) {
+            $content['tips'] = array_values(array_filter(
+                $content['tips'],
+                static fn($tip) => !is_string($tip) || !preg_match(self::CANNED_APPROACH_PATTERN, $tip)
+            ));
+        }
+
+        if (isset($content['summary']) && is_string($content['summary'])) {
+            $content['summary'] = $this->stripCannedApproachSentences($content['summary']);
+        }
+
+        return $content;
+    }
+
+    /**
+     * Retire d'un texte les phrases contenant une formulation toute faite ;
+     * si tout le texte disparaissait, on garde l'original.
+     */
+    private function stripCannedApproachSentences(string $text): string
+    {
+        if (!preg_match(self::CANNED_APPROACH_PATTERN, $text)) {
+            return $text;
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $kept = array_values(array_filter(
+            $sentences,
+            static fn(string $sentence) => !preg_match(self::CANNED_APPROACH_PATTERN, $sentence)
+        ));
+
+        return $kept === [] ? $text : implode(' ', $kept);
     }
 
     private function serializeAnalysis(Analysis $analysis): array
