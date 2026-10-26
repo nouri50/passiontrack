@@ -150,6 +150,13 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->correctLandingFiguresInText($result['summary'], $landingVerdict, true);
         }
 
+        // Garde-fou déterministe (11) : voir stripInventedDistanceTips() et
+        // stripNoteCopiedExternalWeakness().
+        if (is_array($result['content'] ?? null)) {
+            $result['content'] = $this->stripInventedDistanceTips($result['content']);
+            $result['content'] = $this->stripNoteCopiedExternalWeakness($result['content'], $session->getNotes());
+        }
+
         // Garde-fou déterministe (9) : voir stripCannedApproachAdvice().
         if (is_array($result['content'] ?? null)) {
             $result['content'] = $this->stripCannedApproachAdvice($result['content']);
@@ -902,6 +909,80 @@ final class AnalysisController extends AbstractController
 
             $content['tips'] = $tips;
         }
+
+        return $content;
+    }
+
+    /**
+     * Garde-fou déterministe (11a) : retire des conseils ('tips') toute
+     * distance chiffrée en nm/milles (« à partir de 5 nm de la piste (environ
+     * 1 mile) ») — le modèle invente ces seuils (et se trompe d'unités), alors
+     * que les consignes lui interdisent de citer un seuil chiffré universel.
+     */
+    private function stripInventedDistanceTips(array $content): array
+    {
+        if (!isset($content['tips']) || !is_array($content['tips'])) {
+            return $content;
+        }
+
+        $distancePattern = '/\b\d+(?:[.,]\d+)?\s*(?:nm|milles?(?:\s+nautiques?)?|miles?)\b/iu';
+
+        $content['tips'] = array_values(array_filter(
+            $content['tips'],
+            static fn($tip) => !is_string($tip) || !preg_match($distancePattern, $tip)
+        ));
+
+        return $content;
+    }
+
+    /**
+     * Garde-fou déterministe (11b) : retire des points faibles une phrase qui
+     * recopie la note de l'utilisateur (≥ 60 % de ses mots significatifs s'y
+     * retrouvent) ET décrit une cause extérieure (simulateur, aéroport, add-on,
+     * bug, navdata) — c'est une particularité du contexte, pas un défaut de
+     * pilotage. Une phrase qui reprend la note mais décrit une erreur du pilote
+     * (« alignement manqué ») est conservée, de même que les lignes chiffrées
+     * Landing Rate / Gforce.
+     */
+    private function stripNoteCopiedExternalWeakness(array $content, ?string $notes): array
+    {
+        if ($notes === null || trim($notes) === '' || !isset($content['weaknesses']) || !is_array($content['weaknesses'])) {
+            return $content;
+        }
+
+        $tokens = static function (string $text): array {
+            $text = strtr(mb_strtolower($text), [
+                'à' => 'a', 'â' => 'a', 'ä' => 'a', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+                'î' => 'i', 'ï' => 'i', 'ô' => 'o', 'ö' => 'o', 'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ç' => 'c',
+            ]);
+
+            return array_values(array_unique(array_filter(
+                preg_split('/[^a-z0-9]+/', $text) ?: [],
+                static fn(string $w) => strlen($w) >= 4
+            )));
+        };
+
+        $noteTokens = array_flip($tokens($notes));
+        $externalPattern = '/simulateur|\bsim\b|add-?on|\bbug\b|a[ée]roport|navdata|base de donn[ée]es/iu';
+        $landingPattern = '/landing|g-?force|\bfpm\b|verdict officiel/iu';
+
+        $content['weaknesses'] = array_values(array_filter(
+            $content['weaknesses'],
+            static function ($item) use ($tokens, $noteTokens, $externalPattern, $landingPattern): bool {
+                if (!is_string($item) || preg_match($landingPattern, $item) || !preg_match($externalPattern, $item)) {
+                    return true;
+                }
+
+                $itemTokens = $tokens($item);
+                if (count($itemTokens) < 6) {
+                    return true;
+                }
+
+                $shared = count(array_filter($itemTokens, static fn(string $w) => isset($noteTokens[$w])));
+
+                return ($shared / count($itemTokens)) < 0.6;
+            }
+        ));
 
         return $content;
     }
