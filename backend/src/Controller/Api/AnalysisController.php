@@ -166,7 +166,8 @@ final class AnalysisController extends AbstractController
         }
 
         // Garde-fou déterministe (13) : sur un avion de ligne (automanette),
-        // retire les conseils de gestion de la poussée.
+        // retire les conseils de gestion de la poussée en approche (pas ceux
+        // sur l'arrondi / le toucher des roues).
         if ($this->isAirlinerSession($session)) {
             if (is_array($result['content'] ?? null)) {
                 $result['content'] = $this->stripCannedApproachAdvice($result['content'], self::AIRLINER_THROTTLE_PATTERN);
@@ -822,11 +823,14 @@ final class AnalysisController extends AbstractController
     private const CANNED_APPROACH_PATTERN = '/r[ée]duire les gaz plus t[ôo]t|stabiliser la vitesse avant l.interception du plan de descente|maintenir un taux de descente constant d[èe]s le point d.interception|angle d.inclinaison|\\bPAPI\\b[^.!?]*\\b(?:r[ée]dui\\w*|gaz)\\b|\\b(?:r[ée]dui\\w*|gaz)\\b[^.!?]*\\bPAPI\\b|(?:donn[ée]es|r[ée]sultats?) de la session pr[ée]c[ée]dente/iu';
 
     /**
-     * Conseils de gestion de la poussée (« réduisez les gaz… ») : sur un avion
-     * de ligne, la vitesse est gérée par l'automanette, ces conseils n'ont pas
-     * de sens (et un PAPI rouge = trop bas : réduire la poussée aggraverait).
+     * Conseils de gestion de la poussée en approche (« réduisez les gaz… ») :
+     * sur un avion de ligne, la vitesse est gérée par l'automanette, ces
+     * conseils n'ont pas de sens (et un PAPI rouge = trop bas : réduire la
+     * poussée aggraverait). Un conseil qui parle de l'arrondi / du toucher
+     * des roues reste valable (on réduit bien les gaz à ce moment-là, même
+     * avec l'automanette) : il n'est jamais retiré.
      */
-    private const AIRLINER_THROTTLE_PATTERN = '/\\br[ée]dui\\w*\\s+(?:(?:progressivement|r[ée]guli[èe]rement|les)\\s+)*gaz\\b|\\bgaz\\s+[àa]\\s+un\\s+taux\\b|\\bmanette\\s+des\\s+gaz\\b/iu';
+    private const AIRLINER_THROTTLE_PATTERN = '/^(?!.*(?:arrondi|touchdown|toucher|flare|\\bpos[ée]e?\\b|sur la piste|seuil de piste)).*?(?:\\br[ée]dui\\w*\\s+(?:(?:progressivement|r[ée]guli[èe]rement|les)\\s+)*gaz\\b|\\bgaz\\s+[àa]\\s+un\\s+taux\\b|\\bmanette\\s+des\\s+gaz\\b)/isu';
 
     /**
      * Garde-fou déterministe (9) : le modèle recopiait dans presque toutes les
