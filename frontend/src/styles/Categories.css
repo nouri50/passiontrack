@@ -138,6 +138,26 @@
     color: var(--color-error);
 }
 
+.category-tag button.category-tag-edit:hover {
+    color: var(--accent-start);
+}
+
+.category-tag--editing {
+    border-color: var(--accent-start);
+}
+
+.category-field-hint {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-muted);
+    align-self: center;
+}
+
+.category-cancel--small {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
 .category-add-row {
     display: flex;
     gap: 6px;

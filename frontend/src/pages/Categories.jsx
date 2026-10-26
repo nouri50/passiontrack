@@ -44,6 +44,11 @@ function Categories() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [newField, setNewField] = useState(emptyNewField);
+  // Index du champ en cours de modification (null = on ajoute un nouveau champ)
+  const [editingFieldIndex, setEditingFieldIndex] = useState(null);
+  // Noms des champs déjà enregistrés : leur nom n'est pas modifiable, car les
+  // sessions enregistrent leurs valeurs sous ce nom.
+  const [savedLabels, setSavedLabels] = useState([]);
   const [newSubcategory, setNewSubcategory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deactivateTargetId, setDeactivateTargetId] = useState(null);
@@ -67,6 +72,8 @@ function Categories() {
     setForm(emptyForm);
     setEditingId(null);
     setNewField(emptyNewField);
+    setEditingFieldIndex(null);
+    setSavedLabels([]);
     setNewSubcategory("");
   };
 
@@ -97,6 +104,9 @@ function Categories() {
         : [],
     });
     setEditingId(cat.id);
+    setSavedLabels(fields.map((f) => f.label));
+    setEditingFieldIndex(null);
+    setNewField(emptyNewField);
   };
 
   const addField = () => {
@@ -110,19 +120,40 @@ function Categories() {
             .filter(Boolean)
         : [];
 
+    const field = {
+      label: newField.label.trim(),
+      unit: ["text", "number"].includes(newField.type)
+        ? newField.unit.trim()
+        : "",
+      type: newField.type,
+      options,
+    };
+
     setForm((prev) => ({
       ...prev,
-      fields: [
-        ...prev.fields,
-        {
-          label: newField.label.trim(),
-          unit: newField.unit.trim(),
-          type: newField.type,
-          options,
-        },
-      ],
+      fields:
+        editingFieldIndex === null
+          ? [...prev.fields, field]
+          : prev.fields.map((f, i) => (i === editingFieldIndex ? field : f)),
     }));
     setNewField(emptyNewField);
+    setEditingFieldIndex(null);
+  };
+
+  const startEditField = (index) => {
+    const f = form.fields[index];
+    setNewField({
+      label: f.label,
+      unit: f.unit || "",
+      type: f.type,
+      optionsInput: (f.options || []).join(", "),
+    });
+    setEditingFieldIndex(index);
+  };
+
+  const cancelEditField = () => {
+    setNewField(emptyNewField);
+    setEditingFieldIndex(null);
   };
 
   const removeField = (index) => {
@@ -130,7 +161,12 @@ function Categories() {
       ...prev,
       fields: prev.fields.filter((_, i) => i !== index),
     }));
+    // Les index changent après une suppression : on abandonne la modification en cours.
+    cancelEditField();
   };
+
+  const isFieldNameLocked =
+    editingFieldIndex !== null && savedLabels.includes(newField.label);
 
   const addSubcategory = () => {
     if (!newSubcategory.trim()) return;
@@ -271,10 +307,24 @@ function Categories() {
             {form.fields.length > 0 && (
               <ul className="category-tag-list">
                 {form.fields.map((f, i) => (
-                  <li key={i} className="category-tag">
+                  <li
+                    key={i}
+                    className={`category-tag${
+                      editingFieldIndex === i ? " category-tag--editing" : ""
+                    }`}
+                  >
                     {f.label}
                     {f.unit ? ` (${f.unit})` : ""}
                     <span className="category-tag-type">{f.type}</span>
+                    <button
+                      type="button"
+                      className="category-tag-edit"
+                      title={t("categories.editField")}
+                      aria-label={t("categories.editField")}
+                      onClick={() => startEditField(i)}
+                    >
+                      ✎
+                    </button>
                     <button type="button" onClick={() => removeField(i)}>
                       ×
                     </button>
@@ -289,6 +339,8 @@ function Categories() {
                   type="text"
                   placeholder={t("categories.fieldNamePlaceholder")}
                   value={newField.label}
+                  disabled={isFieldNameLocked}
+                  title={isFieldNameLocked ? t("categories.fieldNameLocked") : undefined}
                   onChange={(e) =>
                     setNewField((p) => ({ ...p, label: e.target.value }))
                   }
@@ -340,8 +392,13 @@ function Categories() {
                     type="button"
                     onClick={addField}
                     className="category-add-btn"
+                    title={
+                      editingFieldIndex !== null
+                        ? t("categories.saveField")
+                        : undefined
+                    }
                   >
-                    +
+                    {editingFieldIndex !== null ? "✓" : "+"}
                   </button>
                 </div>
               )}
@@ -353,7 +410,26 @@ function Categories() {
                     onClick={addField}
                     className="category-add-btn category-add-btn--wide"
                   >
-                    {t("categories.addThisField")}
+                    {editingFieldIndex !== null
+                      ? t("categories.saveField")
+                      : t("categories.addThisField")}
+                  </button>
+                </div>
+              )}
+
+              {editingFieldIndex !== null && (
+                <div className="category-add-row">
+                  {isFieldNameLocked && (
+                    <span className="category-field-hint">
+                      {t("categories.fieldNameLocked")}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="category-cancel category-cancel--small"
+                    onClick={cancelEditField}
+                  >
+                    {t("common.cancel")}
                   </button>
                 </div>
               )}
