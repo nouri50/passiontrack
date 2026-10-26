@@ -28,6 +28,15 @@ services:
       - "8002:8000"  # Hôte: 8002 → Conteneur: 8000
     volumes:
       - ./backend:/var/www/html
+      # Dossiers lus à chaque requête (milliers de fichiers PHP et cache Symfony) :
+      # sur le disque Windows monté dans le conteneur ils sont très lents (2 à 8 s
+      # par requête mesurées). Dans des volumes Docker (disque interne rapide), ils
+      # ne passent plus par ce montage. Ton code (src/, config/, public/uploads…)
+      # reste sur ton disque et modifiable dans VS Code. vendor/ est rempli au
+      # premier démarrage par « composer install » (un peu plus long, une seule fois).
+      - passiontrack_backend_vendor:/var/www/html/vendor
+      - passiontrack_backend_cache:/var/www/html/var/cache
+      - passiontrack_backend_log:/var/www/html/var/log
     working_dir: /var/www/html
     environment:
       DATABASE_URL: "mysql://passiontrack:passiontrack@mysql:3306/passiontrack?serverVersion=8.0.39&charset=utf8mb4"
@@ -83,3 +92,6 @@ services:
 
 volumes:
   passiontrack_mysql_data:
+  passiontrack_backend_vendor:
+  passiontrack_backend_cache:
+  passiontrack_backend_log:
