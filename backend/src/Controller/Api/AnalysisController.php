@@ -165,6 +165,17 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->stripCannedApproachSentences($result['summary']);
         }
 
+        // Garde-fou déterministe (13) : sur un avion de ligne (automanette),
+        // retire les conseils de gestion de la poussée.
+        if ($this->isAirlinerSession($session)) {
+            if (is_array($result['content'] ?? null)) {
+                $result['content'] = $this->stripCannedApproachAdvice($result['content'], self::AIRLINER_THROTTLE_PATTERN);
+            }
+            if (is_string($result['summary'] ?? null)) {
+                $result['summary'] = $this->stripCannedApproachSentences($result['summary'], self::AIRLINER_THROTTLE_PATTERN);
+            }
+        }
+
         // Garde-fou déterministe (10) : voir neutralizeIncidentRestatement().
         $declaredIncident = $this->getDeclaredIncident($session);
         if ($declaredIncident !== null && is_array($result['content'] ?? null)) {
@@ -808,7 +819,14 @@ final class AnalysisController extends AbstractController
         return $text;
     }
 
-    private const CANNED_APPROACH_PATTERN = '/r[ée]duire les gaz plus t[ôo]t|stabiliser la vitesse avant l.interception du plan de descente|maintenir un taux de descente constant d[èe]s le point d.interception/iu';
+    private const CANNED_APPROACH_PATTERN = '/r[ée]duire les gaz plus t[ôo]t|stabiliser la vitesse avant l.interception du plan de descente|maintenir un taux de descente constant d[èe]s le point d.interception|angle d.inclinaison|\\bPAPI\\b[^.!?]*\\b(?:r[ée]dui\\w*|gaz)\\b|\\b(?:r[ée]dui\\w*|gaz)\\b[^.!?]*\\bPAPI\\b|(?:donn[ée]es|r[ée]sultats?) de la session pr[ée]c[ée]dente/iu';
+
+    /**
+     * Conseils de gestion de la poussée (« réduisez les gaz… ») : sur un avion
+     * de ligne, la vitesse est gérée par l'automanette, ces conseils n'ont pas
+     * de sens (et un PAPI rouge = trop bas : réduire la poussée aggraverait).
+     */
+    private const AIRLINER_THROTTLE_PATTERN = '/\\br[ée]dui\\w*\\s+(?:(?:progressivement|r[ée]guli[èe]rement|les)\\s+)*gaz\\b|\\bgaz\\s+[àa]\\s+un\\s+taux\\b|\\bmanette\\s+des\\s+gaz\\b/iu';
 
     /**
      * Garde-fou déterministe (9) : le modèle recopiait dans presque toutes les
@@ -817,17 +835,17 @@ final class AnalysisController extends AbstractController
      * descente »), même sans rapport avec la session. On retire ces conseils
      * et phrases toutes faites ; l'exemple a aussi été retiré du prompt.
      */
-    private function stripCannedApproachAdvice(array $content): array
+    private function stripCannedApproachAdvice(array $content, string $pattern = self::CANNED_APPROACH_PATTERN): array
     {
         if (isset($content['tips']) && is_array($content['tips'])) {
             $content['tips'] = array_values(array_filter(
                 $content['tips'],
-                static fn($tip) => !is_string($tip) || !preg_match(self::CANNED_APPROACH_PATTERN, $tip)
+                static fn($tip) => !is_string($tip) || !preg_match($pattern, $tip)
             ));
         }
 
         if (isset($content['summary']) && is_string($content['summary'])) {
-            $content['summary'] = $this->stripCannedApproachSentences($content['summary']);
+            $content['summary'] = $this->stripCannedApproachSentences($content['summary'], $pattern);
         }
 
         return $content;
@@ -837,19 +855,36 @@ final class AnalysisController extends AbstractController
      * Retire d'un texte les phrases contenant une formulation toute faite ;
      * si tout le texte disparaissait, on garde l'original.
      */
-    private function stripCannedApproachSentences(string $text): string
+    private function stripCannedApproachSentences(string $text, string $pattern = self::CANNED_APPROACH_PATTERN): string
     {
-        if (!preg_match(self::CANNED_APPROACH_PATTERN, $text)) {
+        if (!preg_match($pattern, $text)) {
             return $text;
         }
 
         $sentences = preg_split('/(?<=[.!?])\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $kept = array_values(array_filter(
             $sentences,
-            static fn(string $sentence) => !preg_match(self::CANNED_APPROACH_PATTERN, $sentence)
+            static fn(string $sentence) => !preg_match($pattern, $sentence)
         ));
 
         return $kept === [] ? $text : implode(' ', $kept);
+    }
+
+    /**
+     * Vrai si la session déclare un « Type d'appareil » avion de ligne
+     * (champ dynamique de la catégorie Aviation).
+     */
+    private function isAirlinerSession(Session $session): bool
+    {
+        $normalize = static fn(string $s): string => strtolower(str_replace([' ', "'", '’', '_', '-'], '', $s));
+
+        foreach ($session->getData() ?? [] as $key => $value) {
+            if ($normalize((string) $key) === $normalize("Type d'appareil")) {
+                return str_contains(mb_strtolower((string) $value), 'ligne');
+            }
+        }
+
+        return false;
     }
 
     /**
