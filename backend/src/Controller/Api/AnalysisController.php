@@ -184,6 +184,14 @@ final class AnalysisController extends AbstractController
             }
         }
 
+        // Garde-fou déterministe (12) : voir fixVerticalSpeedGForce().
+        if (is_array($result['content'] ?? null)) {
+            $result['content'] = $this->fixVerticalSpeedGForceWording($result['content']);
+        }
+        if (is_string($result['summary'] ?? null)) {
+            $result['summary'] = $this->fixVerticalSpeedGForce($result['summary']);
+        }
+
         // Garde-fou déterministe (7) : voir fixHardLandingWording().
         if (is_array($result['content'] ?? null)) {
             $result['content'] = $this->fixHardLandingWording($result['content']);
@@ -983,6 +991,45 @@ final class AnalysisController extends AbstractController
                 return ($shared / count($itemTokens)) < 0.6;
             }
         ));
+
+        return $content;
+    }
+
+    /**
+     * Garde-fou déterministe (12) : le modèle confond parfois la force G à
+     * l'impact et la vitesse verticale (observé : « vitesse verticale douce
+     * (1,31 G) »). Une valeur en G n'est jamais une vitesse verticale (qui
+     * s'exprime en fpm) : on corrige l'expression en « force G ».
+     */
+    private function fixVerticalSpeedGForce(string $text): string
+    {
+        return preg_replace(
+            '/\bvitesse\s+verticale((?:\s+\p{L}+){0,2}?)\s*\((\d+(?:[.,]\d+)?)\s*G\)/iu',
+            'force G$1 ($2 G)',
+            $text
+        ) ?? $text;
+    }
+
+    /**
+     * Garde-fou déterministe (12) : applique fixVerticalSpeedGForce() au
+     * résumé et aux listes de l'analyse.
+     */
+    private function fixVerticalSpeedGForceWording(array $content): array
+    {
+        foreach (['summary', 'strengths', 'weaknesses', 'tips', 'predictions'] as $field) {
+            if (!isset($content[$field])) {
+                continue;
+            }
+
+            if (is_string($content[$field])) {
+                $content[$field] = $this->fixVerticalSpeedGForce($content[$field]);
+            } elseif (is_array($content[$field])) {
+                $content[$field] = array_map(
+                    fn($item) => is_string($item) ? $this->fixVerticalSpeedGForce($item) : $item,
+                    $content[$field]
+                );
+            }
+        }
 
         return $content;
     }
