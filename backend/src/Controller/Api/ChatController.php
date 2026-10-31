@@ -86,7 +86,8 @@ final class ChatController extends AbstractController
      */
     private function stripStallConfusion(string $reply): string
     {
-        $stallPattern = '/\b(d[ée]crochage|stall)\b/iu';
+        // Couvre aussi le verbe (« plutôt que de décrocher rapidement »).
+        $stallPattern = '/\b(d[ée]croch(?:age|er|e|es|ent|ons|ez|[ée]e?s?|ant)|stall)\b/iu';
 
         if (!preg_match($stallPattern, $reply)) {
             return $reply;
