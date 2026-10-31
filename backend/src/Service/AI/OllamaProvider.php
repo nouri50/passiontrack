@@ -7,7 +7,12 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class OllamaProvider implements AIProviderInterface
 {
-    private const MODEL = 'qwen2.5:7b';
+    // Deux modèles selon l'usage (comparés sur les mêmes sessions) :
+    // - analyses : Mistral suit mieux le format JSON strict et n'invente pas de
+    //   points faibles quand il n'y en a pas ;
+    // - chat : Qwen donne des réponses courtes, exactes et sans invention.
+    private const ANALYSIS_MODEL = 'mistral';
+    private const CHAT_MODEL = 'qwen2.5:7b';
 
     // URL lue depuis la variable d'environnement OLLAMA_URL (valeur par défaut
     // dans .env, surchargée dans docker-compose.yml pour joindre l'Ollama de
@@ -21,7 +26,7 @@ class OllamaProvider implements AIProviderInterface
     {
         $response = $this->client->request('POST', $this->ollamaUrl, [
             'json' => [
-                'model' => self::MODEL,
+                'model' => self::ANALYSIS_MODEL,
                 'prompt' => $prompt,
                 'stream' => false,
                 'format' => 'json',
@@ -63,7 +68,7 @@ class OllamaProvider implements AIProviderInterface
     {
         $response = $this->client->request('POST', $this->ollamaUrl, [
             'json' => [
-                'model' => self::MODEL,
+                'model' => self::CHAT_MODEL,
                 'prompt' => $prompt,
                 'stream' => false,
                 'options' => [
@@ -78,8 +83,11 @@ class OllamaProvider implements AIProviderInterface
         return trim($data['response'] ?? '');
     }
 
+    /**
+     * Nom du modèle enregistré avec chaque analyse (le chat n'est pas enregistré).
+     */
     public function getModelName(): string
     {
-        return self::MODEL;
+        return self::ANALYSIS_MODEL;
     }
 }
