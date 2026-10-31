@@ -7,7 +7,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class OllamaProvider implements AIProviderInterface
 {
-    private const MODEL = 'mistral';
+    private const MODEL = 'qwen2.5:7b';
 
     // URL lue depuis la variable d'environnement OLLAMA_URL (valeur par défaut
     // dans .env, surchargée dans docker-compose.yml pour joindre l'Ollama de
