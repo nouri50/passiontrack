@@ -1103,11 +1103,25 @@ final class AnalysisController extends AbstractController
             return $text;
         }
 
-        return preg_replace_callback(
+        $text = preg_replace_callback(
             '/\b(atterrissages?)(\s+(?:tr[èe]s\s+|plut[ôo]t\s+|relativement\s+)?)doux\b/iu',
             static fn(array $m): string => $m[1] . $m[2] . $word . (strcasecmp($m[1], 'atterrissages') === 0 ? 's' : ''),
             $text
         ) ?? $text;
+
+        // Verdict « dur » : « Bon atterrissage final… (verdict officiel : dur) »
+        // se contredit — on retire l'adjectif « bon ».
+        if ($word === 'dur') {
+            $text = preg_replace_callback(
+                '/\b(bons?)\s+(atterrissages?)\b/iu',
+                static fn(array $m): string => mb_substr($m[1], 0, 1) === mb_strtoupper(mb_substr($m[1], 0, 1))
+                    ? mb_strtoupper(mb_substr($m[2], 0, 1)) . mb_substr($m[2], 1)
+                    : $m[2],
+                $text
+            ) ?? $text;
+        }
+
+        return $text;
     }
 
     /**
