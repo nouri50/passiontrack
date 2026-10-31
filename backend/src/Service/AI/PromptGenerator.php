@@ -408,7 +408,7 @@ class PromptGenerator
             . "3. « Block Time » = durée totale parking à parking. « Flight Time » = durée réelle en l'air. ";
 
         if ($isAutoland) {
-            $baseContext .= "IMPORTANT : Cet atterrissage a été effectué en AUTOLAND (atterrissage automatique). Précise-le clairement dans l'analyse et ne félicite PAS le pilotage manuel pour la douceur du toucher de roues. ";
+            $baseContext .= "IMPORTANT : Cet atterrissage a été effectué en AUTOLAND (atterrissage automatique) : indique-le comme un simple fait dans l'analyse. Le toucher de roues est réalisé par le système automatique, pas par le pilote. ";
         }
 
         if ($weatherContext) {

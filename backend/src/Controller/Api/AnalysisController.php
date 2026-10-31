@@ -204,6 +204,16 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->fixVerticalSpeedGForce($result['summary']);
         }
 
+        // Garde-fou déterministe (14) : voir fixSoftLandingContradiction().
+        if ($landingVerdict !== null) {
+            if (is_array($result['content'] ?? null)) {
+                $result['content'] = $this->fixSoftLandingContradictionWording($result['content'], $landingVerdict);
+            }
+            if (is_string($result['summary'] ?? null)) {
+                $result['summary'] = $this->fixSoftLandingContradiction($result['summary'], $landingVerdict);
+            }
+        }
+
         // Garde-fou déterministe (7) : voir fixHardLandingWording().
         if (is_array($result['content'] ?? null)) {
             $result['content'] = $this->fixHardLandingWording($result['content']);
@@ -820,7 +830,7 @@ final class AnalysisController extends AbstractController
         return $text;
     }
 
-    private const CANNED_APPROACH_PATTERN = '/r[ée]duire les gaz plus t[ôo]t|stabiliser la vitesse avant l.interception du plan de descente|maintenir un taux de descente constant d[èe]s le point d.interception|angle d.inclinaison|\\bPAPI\\b[^.!?]*\\b(?:r[ée]dui\\w*|gaz)\\b|\\b(?:r[ée]dui\\w*|gaz)\\b[^.!?]*\\bPAPI\\b|(?:donn[ée]es|r[ée]sultats?) de la session pr[ée]c[ée]dente/iu';
+    private const CANNED_APPROACH_PATTERN = '/r[ée]duire les gaz plus t[ôo]t|stabiliser la vitesse avant l.interception du plan de descente|maintenir un taux de descente constant d[èe]s le point d.interception|angle d.inclinaison|\\bPAPI\\b[^.!?]*\\b(?:r[ée]dui\\w*|gaz)\\b|\\b(?:r[ée]dui\\w*|gaz)\\b[^.!?]*\\bPAPI\\b|(?:donn[ée]es|r[ée]sultats?) de la session pr[ée]c[ée]dente|ne f[ée]licite\\w* pas/iu';
 
     /**
      * Conseils de gestion de la poussée en approche (« réduisez les gaz… ») :
@@ -1065,6 +1075,57 @@ final class AnalysisController extends AbstractController
             } elseif (is_array($content[$field])) {
                 $content[$field] = array_map(
                     fn($item) => is_string($item) ? $this->fixVerticalSpeedGForce($item) : $item,
+                    $content[$field]
+                );
+            }
+        }
+
+        return $content;
+    }
+
+    /**
+     * Garde-fou déterministe (14) : le modèle écrit parfois « atterrissage
+     * doux » alors que le verdict officiel du Landing Rate est dégradé
+     * (observé : « avec un atterrissage doux » pour −661 fpm, verdict « dur »).
+     * On remplace « doux » par « dur » ou « ferme » selon le verdict officiel.
+     * Sans effet quand le Landing Rate est bon.
+     */
+    private function fixSoftLandingContradiction(string $text, array $verdict): string
+    {
+        $rateVerdict = (string) ($verdict['rate_verdict'] ?? '');
+        $word = match (true) {
+            $rateVerdict === 'dur' => 'dur',
+            str_starts_with($rateVerdict, 'ferme') => 'ferme',
+            default => null,
+        };
+
+        if ($word === null) {
+            return $text;
+        }
+
+        return preg_replace_callback(
+            '/\b(atterrissages?)(\s+(?:tr[èe]s\s+|plut[ôo]t\s+|relativement\s+)?)doux\b/iu',
+            static fn(array $m): string => $m[1] . $m[2] . $word . (strcasecmp($m[1], 'atterrissages') === 0 ? 's' : ''),
+            $text
+        ) ?? $text;
+    }
+
+    /**
+     * Garde-fou déterministe (14) : applique fixSoftLandingContradiction() au
+     * résumé et aux listes de l'analyse.
+     */
+    private function fixSoftLandingContradictionWording(array $content, array $verdict): array
+    {
+        foreach (['summary', 'strengths', 'weaknesses', 'tips', 'predictions'] as $field) {
+            if (!isset($content[$field])) {
+                continue;
+            }
+
+            if (is_string($content[$field])) {
+                $content[$field] = $this->fixSoftLandingContradiction($content[$field], $verdict);
+            } elseif (is_array($content[$field])) {
+                $content[$field] = array_map(
+                    fn($item) => is_string($item) ? $this->fixSoftLandingContradiction($item, $verdict) : $item,
                     $content[$field]
                 );
             }
