@@ -320,6 +320,7 @@ final class SessionController extends AbstractController
             'id' => $session->getId(),
             'category_id' => $session->getCategory()->getId(),
             'category_name' => $session->getCategory()->getName(),
+            'category_slug' => $session->getCategory()->getSlug(),
             'subcategory' => $session->getSubcategery(),
             'title' => $session->getTitle(),
             'description' => $session->getDescription(),

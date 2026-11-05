@@ -20,7 +20,9 @@ class PromptGenerator
 
         $historyContext = $this->buildHistoryContext($session, $category);
         $technicalIncident = $this->getTechnicalIncident($data);
-        $referenceContext = $this->buildReferenceContext($category, $data, $technicalIncident, $notes);
+        $referenceContext = $category === 'fitness'
+            ? $this->buildFitnessContext($data, (int) $duration, $historyContext !== null)
+            : $this->buildReferenceContext($category, $data, $technicalIncident, $notes);
 
         $basePrompt = match ($category) {
             'aviation' => "Tu es un instructeur de simulation de vol. Réponds TOUJOURS entièrement en français, jamais en anglais. Analyse cette session de vol : titre \"{$title}\", durée de vol réelle {$duration}s, données détaillées: {$dataJson}.",
@@ -52,19 +54,122 @@ class PromptGenerator
             }
         }
 
-        if ($notes) {
+        if ($notes && $category !== 'aviation') {
+            $basePrompt .= " Les notes de l'utilisateur ci-dessus sont le contexte réel de la session : appuie-toi dessus, sans inventer de détail qui n'y figure pas.";
+        }
+
+        if ($notes && $category === 'aviation') {
             $basePrompt .= " RAPPEL CRITIQUE SUR LES NOTES DE L'UTILISATEUR : « {$notes} ». ";
             $basePrompt .= "Règles d'interprétation strictes : ";
             $basePrompt .= "1. Si les notes confirment l'absence de problème technique ou matériel : INTERDICTION ABSOLUE de mentionner la maintenance, le matériel, la configuration système ou les mises à jour dans 'tips' ou ailleurs. Les conseils ('tips') doivent porter EXCLUSIVEMENT sur des techniques de pilotage ou des défis d'entraînement (ex : gestion du vent traversier, approches aux instruments, vols de nuit). ";
             $basePrompt .= "2. Si et SEULEMENT SI les notes décrivent une panne ou un bug réel : concentre les conseils sur ce souci technique précis sans impacter la note de pilotage.";
         }
 
-        $basePrompt .= " Consigne de cohérence : si le score de la session est de 100 (ou la note maximale), OU si le champ Grade de mission vaut S ou A, n'invente pas de points faibles artificiels — laisse 'weaknesses' vide ([]) ou indique 'Aucun point faible majeur identifié'. N'invente jamais de point faible générique du type « données non fournies » ou « informations manquantes » : l'absence de donnée n'est pas une faiblesse de pilotage. N'utilise aucun terme technique qui n'existe pas dans le vocabulaire aéronautique standard (par exemple, n'invente pas des termes comme « raccords d'altitude » ou « rétroplanage » — le terme standard pour un atterrissage en douceur est « atterrissage doux », jamais un néologisme). Vérifie aussi la cohérence physique de tes conseils avant de les donner : ne suggère jamais une action qui aggraverait le problème identifié (par exemple, ne recommande pas d'augmenter la vitesse ou la pente de descente pour réduire un Landing Rate déjà élevé, puisque cela l'empirerait — la bonne recommandation serait de réduire la vitesse verticale plus tôt dans l'approche). N'invente jamais de référence à un système, bouton ou sélecteur de cockpit précis (par exemple un sélecteur de limite d'inclinaison) sans certitude qu'il existe réellement sur l'appareil piloté — les architectures de protection de vol diffèrent significativement d'un constructeur à l'autre (Airbus vs Boeing notamment), et même entre appareils d'un même constructeur. Si un conseil sur la gestion d'un paramètre (inclinaison, vitesse, assiette...) est pertinent mais que tu n'es pas certain du système exact disponible sur cet appareil, reste en langage général de pilotage sans citer d'instrument ou de contrôle spécifique que tu ne peux pas garantir — et SANS RECOPIER telle quelle une formulation donnée en exemple ailleurs dans cette consigne : rédige ta propre phrase. N'emploie JAMAIS les mots « automatique »/« autopilote »/« pilote automatique » à propos d'un virage, d'une trajectoire ou d'une manœuvre de pilotage, SAUF si les données de la session confirment explicitement un atterrissage ou un pilotage automatique (voir consigne AUTOLAND ci-dessus) : un vol dont les données indiquent VFR, approche visuelle, ou pilotage manuel exclut par définition toute référence à une gestion automatique de la trajectoire. Si un verdict officiel a été fourni pour le Landing Rate ou le Landing Gforce (par exemple « bon (atterrissage doux) »), ce verdict fait autorité sur l'intégralité de ta réponse — ne le contredis JAMAIS par une caractérisation contraire ailleurs, y compris dans le résumé ('summary') ou les conseils ('tips') : par exemple, ne dis jamais qu'une vitesse verticale est « élevée » ou « à surveiller » si le verdict officiel fourni est « bon ». Cette règle s'applique AUSSI aux conseils correctifs, pas seulement aux qualificatifs directs : si le verdict d'un paramètre est « bon », ne propose AUCUN conseil visant à l'améliorer (par exemple, ne suggère pas de réduire la vitesse verticale plus tôt en approche si le Landing Rate est déjà noté « bon ») — un paramètre jugé bon n'a besoin d'aucune correction, seulement d'être maintenu. Le chiffre brut du Landing Rate ou du Landing Gforce peut apparaître ailleurs dans les données de la session (JSON) : ignore ta propre impression sur ce chiffre brut et fie-toi exclusivement au verdict officiel calculé, qui seul fait foi.";
+        $basePrompt .= $category !== 'aviation'
+            ? " Consigne de cohérence : n'invente pas de points faibles artificiels — si les données ne montrent aucun point faible réel, laisse 'weaknesses' vide ([]). N'invente jamais de point faible du type « données non fournies » ou « informations manquantes » : l'absence de donnée n'est pas une faiblesse. N'invente aucun chiffre, exercice, équipement ni fait qui ne figure pas dans les données ou les notes. Vérifie la cohérence de tes conseils : ne suggère jamais une action qui aggraverait le problème identifié."
+            : " Consigne de cohérence : si le score de la session est de 100 (ou la note maximale), OU si le champ Grade de mission vaut S ou A, n'invente pas de points faibles artificiels — laisse 'weaknesses' vide ([]) ou indique 'Aucun point faible majeur identifié'. N'invente jamais de point faible générique du type « données non fournies » ou « informations manquantes » : l'absence de donnée n'est pas une faiblesse de pilotage. N'utilise aucun terme technique qui n'existe pas dans le vocabulaire aéronautique standard (par exemple, n'invente pas des termes comme « raccords d'altitude » ou « rétroplanage » — le terme standard pour un atterrissage en douceur est « atterrissage doux », jamais un néologisme). Vérifie aussi la cohérence physique de tes conseils avant de les donner : ne suggère jamais une action qui aggraverait le problème identifié (par exemple, ne recommande pas d'augmenter la vitesse ou la pente de descente pour réduire un Landing Rate déjà élevé, puisque cela l'empirerait — la bonne recommandation serait de réduire la vitesse verticale plus tôt dans l'approche). N'invente jamais de référence à un système, bouton ou sélecteur de cockpit précis (par exemple un sélecteur de limite d'inclinaison) sans certitude qu'il existe réellement sur l'appareil piloté — les architectures de protection de vol diffèrent significativement d'un constructeur à l'autre (Airbus vs Boeing notamment), et même entre appareils d'un même constructeur. Si un conseil sur la gestion d'un paramètre (inclinaison, vitesse, assiette...) est pertinent mais que tu n'es pas certain du système exact disponible sur cet appareil, reste en langage général de pilotage sans citer d'instrument ou de contrôle spécifique que tu ne peux pas garantir — et SANS RECOPIER telle quelle une formulation donnée en exemple ailleurs dans cette consigne : rédige ta propre phrase. N'emploie JAMAIS les mots « automatique »/« autopilote »/« pilote automatique » à propos d'un virage, d'une trajectoire ou d'une manœuvre de pilotage, SAUF si les données de la session confirment explicitement un atterrissage ou un pilotage automatique (voir consigne AUTOLAND ci-dessus) : un vol dont les données indiquent VFR, approche visuelle, ou pilotage manuel exclut par définition toute référence à une gestion automatique de la trajectoire. Si un verdict officiel a été fourni pour le Landing Rate ou le Landing Gforce (par exemple « bon (atterrissage doux) »), ce verdict fait autorité sur l'intégralité de ta réponse — ne le contredis JAMAIS par une caractérisation contraire ailleurs, y compris dans le résumé ('summary') ou les conseils ('tips') : par exemple, ne dis jamais qu'une vitesse verticale est « élevée » ou « à surveiller » si le verdict officiel fourni est « bon ». Cette règle s'applique AUSSI aux conseils correctifs, pas seulement aux qualificatifs directs : si le verdict d'un paramètre est « bon », ne propose AUCUN conseil visant à l'améliorer (par exemple, ne suggère pas de réduire la vitesse verticale plus tôt en approche si le Landing Rate est déjà noté « bon ») — un paramètre jugé bon n'a besoin d'aucune correction, seulement d'être maintenu. Le chiffre brut du Landing Rate ou du Landing Gforce peut apparaître ailleurs dans les données de la session (JSON) : ignore ta propre impression sur ce chiffre brut et fie-toi exclusivement au verdict officiel calculé, qui seul fait foi.";
         return $basePrompt . " Réponds UNIQUEMENT en JSON valide, ENTIÈREMENT EN FRANÇAIS (tous les textes doivent être en français, pas d'anglais), avec cette structure exacte : "
             . '{"strengths": ["point fort 1", "point fort 2"], "weaknesses": ["point faible 1"], '
             . '"tips": ["conseil 1", "conseil 2"], "predictions": ["prédiction 1"], "summary": "résumé court en une phrase"}'
             . " IMPORTANT : les textes entre guillemets dans cette structure (« point fort 1 », « conseil 1 », « résumé court en une phrase », etc.) décrivent le FORMAT attendu de chaque champ, ce ne sont PAS des exemples de contenu à reproduire. Ne préfixe AUCUNE valeur par le nom du champ ou une description de son format — en particulier, le champ 'summary' ne doit JAMAIS commencer par « Résumé », « Résumé court en une phrase » ou une formule équivalente : écris directement le contenu final de chaque champ, sans label ni méta-commentaire sur le format."
             . " RAPPEL FINAL IMPORTANT : tout le texte de cette consigne (règles de vocabulaire, contexte historique, rappels internes, consignes de cohérence, etc.) est destiné à TOI SEUL pour t'aider à analyser — ce n'est JAMAIS du contenu à recopier, paraphraser ou résumer dans 'strengths', 'weaknesses', 'tips', 'predictions' ou 'summary'. Si tu n'as aucun point fort, faible, conseil ou prédiction réellement utile à donner sur la session elle-même, laisse le tableau correspondant vide ([]) plutôt que d'y mettre une reformulation de tes propres instructions.";
+    }
+
+    /**
+     * Contexte spécifique à une séance de fitness. Sans lui, le modèle
+     * recevait les règles d'aviation (Landing Rate, pilotage…) et jugeait la
+     * fréquence cardiaque « élevée » sans aucune référence (âge, FC max,
+     * zones). Ici on donne uniquement des faits calculés et on interdit les
+     * jugements qu'aucune donnée ne permet d'étayer.
+     */
+    private function buildFitnessContext(array $data, int $durationSeconds, bool $hasHistory): string
+    {
+        $minutes = $durationSeconds > 0 ? $durationSeconds / 60 : null;
+        $calories = $this->findNumericFieldContaining($data, ['calorie', 'kcal']);
+        $avgHr = $this->findNumericFieldContaining($data, ['cardiaquemoy', 'fcmoy', 'bpmmoy']);
+        $minHr = $this->findNumericFieldContaining($data, ['cardiaquemin', 'fcmin']);
+        $maxHr = $this->findNumericFieldContaining($data, ['cardiaquemax', 'fcmax']);
+        $hasHrReference = $maxHr !== null || $this->hasFieldContaining($data, ['zone']);
+
+        $context = "RÈGLES POUR CETTE SÉANCE DE FITNESS, à respecter strictement : "
+            . "1. N'invente AUCUN exercice, répétition, charge, groupe musculaire ni résultat qui ne figure pas dans les données ou les notes. "
+            . "2. Cite les chiffres fournis tels quels, sans les modifier. ";
+
+        if ($minutes !== null) {
+            $context .= sprintf("3. Durée totale de la séance : %.0f min. ", $minutes);
+        }
+
+        if ($calories !== null && $minutes !== null) {
+            $context .= sprintf(
+                "Calories : %.0f kcal sur %.0f min, soit %.1f kcal/min (calcul vérifié, à utiliser tel quel). Ne dis pas que c'est beaucoup ou peu : tu n'as aucune référence (poids, âge, sexe) pour en juger. ",
+                $calories,
+                $minutes,
+                $calories / $minutes
+            );
+        }
+
+        if ($avgHr !== null) {
+            $context .= sprintf("Fréquence cardiaque moyenne : %.0f bpm. ", $avgHr);
+            if ($minHr !== null && $maxHr !== null) {
+                $context .= sprintf("Plage observée pendant la séance : %.0f à %.0f bpm. ", $minHr, $maxHr);
+            }
+            if ($hasHrReference) {
+                $context .= "Les données fournissent une référence (fréquence max ou zones) : tu peux situer la fréquence moyenne par rapport à elle, sans rien inventer de plus. ";
+            } else {
+                $context .= "Tu ne connais NI l'âge, NI la fréquence cardiaque maximale, NI les zones d'entraînement de l'utilisateur : tu ne peux donc PAS qualifier cette fréquence cardiaque (ni « élevée », ni « basse », ni « bonne », ni « excellente »), ni parler d'effort cardiaque bon ou mauvais. Cite-la comme simple donnée chiffrée, sans jugement, ou ne la cite pas. ";
+            }
+        }
+
+        $context .= "Ne qualifie l'intensité de la séance (légère, modérée, soutenue, intense) que si les données la fournissent explicitement. ";
+
+        if (!$hasHistory) {
+            $context .= "C'est la PREMIÈRE séance enregistrée dans cette catégorie : il n'y a aucune comparaison, progression ou régularité à commenter, n'en parle pas. ";
+        }
+
+        $context .= "POINTS FORTS : n'utilise PAS le simple type d'entraînement ni la durée comme point fort (c'est une description, pas une qualité). Un point fort doit s'appuyer sur un fait mesuré ou sur une comparaison avec l'historique ; à défaut, laisse 'strengths' vide ([]). "
+            . "POINTS FAIBLES : ne signale un point faible que si un chiffre ou une note le montre réellement ; une séance courte n'est pas en soi un défaut. "
+            . "CONSEILS : concrets, prudents et utiles pour ce type de séance (progression graduelle, récupération, hydratation, régularité, échauffement, retour au calme), sans chiffre inventé et sans conseil médical. Interdit : un conseil qui se contente de reformuler le type d'entraînement déjà effectué. ";
+
+        return $context;
+    }
+
+    /**
+     * Premier champ numérique dont le libellé normalisé contient l'un des
+     * fragments donnés (les libellés sont libres : « Fréquence cardiaque moy »,
+     * « FC moyenne (bpm) »…).
+     */
+    private function findNumericFieldContaining(array $data, array $needles): ?float
+    {
+        foreach ($data as $key => $value) {
+            if (!is_numeric($value)) {
+                continue;
+            }
+            $normalizedKey = $this->normalizeKey((string) $key);
+            foreach ($needles as $needle) {
+                if (str_contains($normalizedKey, $needle)) {
+                    return (float) $value;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function hasFieldContaining(array $data, array $needles): bool
+    {
+        foreach ($data as $key => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            $normalizedKey = $this->normalizeKey((string) $key);
+            foreach ($needles as $needle) {
+                if (str_contains($normalizedKey, $needle)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function normalizeKey(string $key): string

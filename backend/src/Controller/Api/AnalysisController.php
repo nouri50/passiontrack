@@ -222,6 +222,20 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->fixHardLandingText($result['summary']);
         }
 
+        // Garde-fou déterministe (15) : fitness sans référence cardiaque (FC max
+        // ou zones) — voir stripUnfoundedHeartRateJudgement().
+        if ($session->getCategory()->getSlug() === 'fitness' && !$this->hasHeartRateReference($session)) {
+            if (is_array($result['content'] ?? null)) {
+                $result['content'] = $this->stripUnfoundedHeartRateJudgement($result['content']);
+                if (isset($result['content']['summary'])) {
+                    $result['summary'] = $result['content']['summary'];
+                }
+            }
+            if (is_string($result['summary'] ?? null)) {
+                $result['summary'] = $this->stripCannedApproachSentences($result['summary'], self::UNFOUNDED_HEART_RATE_PATTERN);
+            }
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);
@@ -882,6 +896,56 @@ final class AnalysisController extends AbstractController
         ));
 
         return $kept === [] ? $text : implode(' ', $kept);
+    }
+
+    /**
+     * Jugement sur la fréquence cardiaque (« élevée », « bon effort cardiaque »…).
+     * Sans âge, FC max ni zones, rien ne permet de l'affirmer.
+     */
+    private const UNFOUNDED_HEART_RATE_PATTERN = '/(?:fr[ée]quence\\s+cardiaque|\\bfc\\b|\\bbpm\\b|\\bcardiaque\\b|\\bpouls\\b)[^.!?]{0,80}?\\b(?:[ée]lev[ée]e?s?|bon(?:ne)?s?|excellente?s?|haute?s?|basse?s?|faibles?|optimale?s?|id[ée]ale?s?|intenses?|soutenue?s?|mod[ée]r[ée]e?s?|satisfaisante?s?)\\b|\\b(?:bon|excellent|bel|gros|fort|solide)\\s+effort\\s+cardi\\w*|\\beffort\\s+cardi\\w*\\s+(?:bon|excellent|soutenu|[ée]lev[ée]|important|mod[ée]r[ée])/iu';
+
+    /**
+     * Vrai si la séance fournit une référence cardiaque : champ « FC max » ou
+     * un champ de zones de fréquence cardiaque.
+     */
+    private function hasHeartRateReference(Session $session): bool
+    {
+        foreach ($session->getData() ?? [] as $key => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            $normalizedKey = strtolower(str_replace([' ', "'", '’', '_', '-'], '', (string) $key));
+            if (str_contains($normalizedKey, 'cardiaquemax') || str_contains($normalizedKey, 'fcmax') || str_contains($normalizedKey, 'zone')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Garde-fou déterministe (15) : sur une séance de fitness sans référence
+     * cardiaque, retire des points forts/faibles/conseils et du résumé toute
+     * phrase qui juge la fréquence cardiaque (observé : « Fréquence cardiaque
+     * moyenne élevée (123 bpm) » en point fort et « bon effort cardiaque » dans
+     * le résumé, alors que le modèle ne connaît ni l'âge ni la FC max).
+     */
+    private function stripUnfoundedHeartRateJudgement(array $content): array
+    {
+        foreach (['strengths', 'weaknesses', 'tips'] as $field) {
+            if (isset($content[$field]) && is_array($content[$field])) {
+                $content[$field] = array_values(array_filter(
+                    $content[$field],
+                    static fn($entry) => !is_string($entry) || !preg_match(self::UNFOUNDED_HEART_RATE_PATTERN, $entry)
+                ));
+            }
+        }
+
+        if (isset($content['summary']) && is_string($content['summary'])) {
+            $content['summary'] = $this->stripCannedApproachSentences($content['summary'], self::UNFOUNDED_HEART_RATE_PATTERN);
+        }
+
+        return $content;
     }
 
     /**
