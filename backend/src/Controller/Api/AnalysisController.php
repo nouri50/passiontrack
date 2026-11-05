@@ -236,6 +236,20 @@ final class AnalysisController extends AbstractController
             }
         }
 
+        // Chiffres clés d'une séance de fitness : ajoutés par le code à la fin
+        // du résumé (le modèle ne les cite pas de façon fiable). Placé APRÈS
+        // le garde-fou (15), pour ne pas être retiré par lui.
+        if ($session->getCategory()->getSlug() === 'fitness') {
+            $factsLine = $promptGenerator->buildFitnessFactsLine($session);
+            if ($factsLine !== null) {
+                if (isset($result['content']['summary']) && is_string($result['content']['summary'])) {
+                    $result['content']['summary'] = rtrim($result['content']['summary']) . ' ' . $factsLine;
+                }
+                $result['summary'] = rtrim((string) ($result['summary'] ?? '')) . ' ' . $factsLine;
+                $result['summary'] = ltrim($result['summary']);
+            }
+        }
+
         $analysis = new Analysis();
         $analysis->setSession($session);
         $analysis->setUser($user);

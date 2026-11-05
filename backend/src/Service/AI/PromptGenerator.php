@@ -76,6 +76,90 @@ class PromptGenerator
     }
 
     /**
+     * Chiffres de la séance de fitness, calculés une seule fois et partagés
+     * entre le prompt (buildFitnessContext) et la ligne « chiffres clés »
+     * ajoutée à l'analyse (buildFitnessFactsLine).
+     */
+    private function computeFitnessMetrics(array $data, int $durationSeconds): array
+    {
+        $minutes = $durationSeconds > 0 ? $durationSeconds / 60 : null;
+        $calories = $this->findNumericFieldContaining($data, ['calorie', 'kcal']);
+        $avgHr = $this->findNumericFieldContaining($data, ['cardiaquemoy', 'fcmoy', 'bpmmoy']);
+        $age = $this->findAge($data);
+
+        $theoreticalMax = null;
+        $percent = null;
+        $intensity = null;
+        if ($age !== null) {
+            $theoreticalMax = 220 - $age;
+            if ($avgHr !== null) {
+                $percent = $avgHr / $theoreticalMax * 100;
+                $intensity = match (true) {
+                    $percent < 64 => 'légère',
+                    $percent < 77 => 'modérée',
+                    $percent < 96 => 'soutenue',
+                    default => 'maximale',
+                };
+            }
+        }
+
+        return [
+            'minutes' => $minutes,
+            'calories' => $calories,
+            'kcal_per_min' => ($calories !== null && $minutes !== null) ? $calories / $minutes : null,
+            'avg_hr' => $avgHr,
+            'min_hr' => $this->findNumericFieldContaining($data, ['cardiaquemin', 'fcmin']),
+            'max_hr' => $this->findNumericFieldContaining($data, ['cardiaquemax', 'fcmax']),
+            'age' => $age,
+            'theoretical_max' => $theoreticalMax,
+            'percent' => $percent,
+            'intensity' => $intensity,
+            'has_zone' => $this->hasFieldContaining($data, ['zone']),
+        ];
+    }
+
+    /**
+     * Ligne « chiffres clés » ajoutée à la fin du résumé de l'analyse d'une
+     * séance de fitness : entièrement calculée ici, donc indépendante du
+     * modèle (qui ne les cite pas de façon fiable). Null s'il n'y a aucun
+     * chiffre exploitable.
+     */
+    public function buildFitnessFactsLine(Session $session): ?string
+    {
+        $m = $this->computeFitnessMetrics($session->getData() ?? [], (int) $session->getDuration());
+        $fmt = static fn(float $n, int $d = 0): string => number_format($n, $d, ',', ' ');
+        $parts = [];
+
+        if ($m['minutes'] !== null) {
+            $parts[] = sprintf('%s min', $fmt($m['minutes']));
+        }
+        if ($m['calories'] !== null) {
+            $part = sprintf('%s kcal', $fmt($m['calories']));
+            if ($m['kcal_per_min'] !== null) {
+                $part .= sprintf(' (%s kcal/min)', $fmt($m['kcal_per_min'], 1));
+            }
+            $parts[] = $part;
+        }
+        if ($m['avg_hr'] !== null) {
+            $part = sprintf('FC moyenne %s bpm', $fmt($m['avg_hr']));
+            if ($m['min_hr'] !== null && $m['max_hr'] !== null) {
+                $part .= sprintf(' (plage %s–%s bpm)', $fmt($m['min_hr']), $fmt($m['max_hr']));
+            }
+            $parts[] = $part;
+        }
+        if ($m['intensity'] !== null) {
+            $parts[] = sprintf(
+                'intensité cardiaque estimée %s (%s %% de la FC max théorique de %s bpm, d\'après l\'âge renseigné)',
+                $m['intensity'],
+                $fmt($m['percent']),
+                $fmt($m['theoretical_max'])
+            );
+        }
+
+        return $parts === [] ? null : 'Chiffres clés : ' . implode(' · ', $parts) . '.';
+    }
+
+    /**
      * Contexte spécifique à une séance de fitness. Sans lui, le modèle
      * recevait les règles d'aviation (Landing Rate, pilotage…) et jugeait la
      * fréquence cardiaque « élevée » sans aucune référence (âge, FC max,
@@ -84,57 +168,44 @@ class PromptGenerator
      */
     private function buildFitnessContext(array $data, int $durationSeconds, bool $hasHistory): string
     {
-        $minutes = $durationSeconds > 0 ? $durationSeconds / 60 : null;
-        $calories = $this->findNumericFieldContaining($data, ['calorie', 'kcal']);
-        $avgHr = $this->findNumericFieldContaining($data, ['cardiaquemoy', 'fcmoy', 'bpmmoy']);
-        $minHr = $this->findNumericFieldContaining($data, ['cardiaquemin', 'fcmin']);
-        $maxHr = $this->findNumericFieldContaining($data, ['cardiaquemax', 'fcmax']);
-        $age = $this->findAge($data);
+        $m = $this->computeFitnessMetrics($data, $durationSeconds);
         // La « FC max » saisie est le pic atteint pendant la séance, PAS la
         // fréquence maximale de la personne : seuls l'âge ou des zones
         // permettent de situer l'intensité.
-        $hasHrReference = $age !== null || $this->hasFieldContaining($data, ['zone']);
+        $hasHrReference = $m['age'] !== null || $m['has_zone'];
 
         $context = "RÈGLES POUR CETTE SÉANCE DE FITNESS, à respecter strictement : "
             . "1. N'invente AUCUN exercice, répétition, charge, groupe musculaire ni résultat qui ne figure pas dans les données ou les notes. "
             . "2. Cite les chiffres fournis tels quels, sans les modifier. ";
 
-        if ($minutes !== null) {
-            $context .= sprintf("3. Durée totale de la séance : %.0f min. ", $minutes);
+        if ($m['minutes'] !== null) {
+            $context .= sprintf("3. Durée totale de la séance : %.0f min. ", $m['minutes']);
         }
 
-        if ($calories !== null && $minutes !== null) {
+        if ($m['kcal_per_min'] !== null) {
             $context .= sprintf(
                 "Calories : %.0f kcal sur %.0f min, soit %.1f kcal/min (calcul vérifié, à utiliser tel quel). Ne dis pas que c'est beaucoup ou peu : tu n'as aucune référence (poids, âge, sexe) pour en juger. ",
-                $calories,
-                $minutes,
-                $calories / $minutes
+                $m['calories'],
+                $m['minutes'],
+                $m['kcal_per_min']
             );
         }
 
-        if ($avgHr !== null) {
-            $context .= sprintf("Fréquence cardiaque moyenne : %.0f bpm. ", $avgHr);
-            if ($minHr !== null && $maxHr !== null) {
-                $context .= sprintf("Plage observée pendant la séance : %.0f à %.0f bpm. ", $minHr, $maxHr);
+        if ($m['avg_hr'] !== null) {
+            $context .= sprintf("Fréquence cardiaque moyenne : %.0f bpm. ", $m['avg_hr']);
+            if ($m['min_hr'] !== null && $m['max_hr'] !== null) {
+                $context .= sprintf("Plage observée pendant la séance : %.0f à %.0f bpm. ", $m['min_hr'], $m['max_hr']);
             }
-            if ($maxHr !== null) {
+            if ($m['max_hr'] !== null) {
                 $context .= "Le champ de fréquence cardiaque max est le pic atteint PENDANT cette séance, PAS la fréquence maximale de l'utilisateur. ";
             }
-            if ($age !== null) {
-                $theoreticalMax = 220 - $age;
-                $percent = $avgHr / $theoreticalMax * 100;
-                $intensity = match (true) {
-                    $percent < 64 => 'légère',
-                    $percent < 77 => 'modérée',
-                    $percent < 96 => 'soutenue',
-                    default => 'maximale',
-                };
+            if ($m['age'] !== null) {
                 $context .= sprintf(
                     "Âge renseigné : %.0f ans, donc fréquence cardiaque maximale théorique estimée à %.0f bpm (formule 220 − âge, estimation indicative). La fréquence moyenne représente %.0f %% de ce maximum → intensité cardiaque estimée : %s (verdict calculé, à utiliser tel quel en précisant que c'est une estimation ; ne la qualifie pas autrement). ",
-                    $age,
-                    $theoreticalMax,
-                    $percent,
-                    $intensity
+                    $m['age'],
+                    $m['theoretical_max'],
+                    $m['percent'],
+                    $m['intensity']
                 );
             } elseif ($hasHrReference) {
                 $context .= "Les données fournissent des zones de fréquence cardiaque : tu peux t'y référer, sans rien inventer de plus. ";
