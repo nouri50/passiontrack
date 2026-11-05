@@ -905,8 +905,8 @@ final class AnalysisController extends AbstractController
     private const UNFOUNDED_HEART_RATE_PATTERN = '/(?:fr[ée]quence\\s+cardiaque|\\bfc\\b|\\bbpm\\b|\\bcardiaque\\b|\\bpouls\\b)[^.!?]{0,80}?\\b(?:[ée]lev[ée]e?s?|bon(?:ne)?s?|excellente?s?|haute?s?|basse?s?|faibles?|optimale?s?|id[ée]ale?s?|intenses?|soutenue?s?|mod[ée]r[ée]e?s?|satisfaisante?s?)\\b|\\b(?:bon|excellent|bel|gros|fort|solide)\\s+effort\\s+cardi\\w*|\\beffort\\s+cardi\\w*\\s+(?:bon|excellent|soutenu|[ée]lev[ée]|important|mod[ée]r[ée])/iu';
 
     /**
-     * Vrai si la séance fournit une référence cardiaque : champ « FC max » ou
-     * un champ de zones de fréquence cardiaque.
+     * Vrai si la séance fournit une référence cardiaque : un âge plausible
+     * (FC max théorique) ou un champ de zones de fréquence cardiaque.
      */
     private function hasHeartRateReference(Session $session): bool
     {
@@ -914,8 +914,13 @@ final class AnalysisController extends AbstractController
             if ($value === '' || $value === null) {
                 continue;
             }
-            $normalizedKey = strtolower(str_replace([' ', "'", '’', '_', '-'], '', (string) $key));
-            if (str_contains($normalizedKey, 'cardiaquemax') || str_contains($normalizedKey, 'fcmax') || str_contains($normalizedKey, 'zone')) {
+            $normalizedKey = mb_strtolower(str_replace([' ', "'", '’', '_', '-'], '', (string) $key));
+            // La « FC max » saisie est le pic de la séance, pas une référence :
+            // seuls un âge plausible ou des zones permettent de juger la FC.
+            if (str_contains($normalizedKey, 'zone')) {
+                return true;
+            }
+            if (preg_match('/^[aâ]ge(?:\(|$)/u', $normalizedKey) && is_numeric($value) && $value >= 10 && $value <= 100) {
                 return true;
             }
         }

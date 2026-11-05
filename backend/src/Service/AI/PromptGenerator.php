@@ -89,7 +89,11 @@ class PromptGenerator
         $avgHr = $this->findNumericFieldContaining($data, ['cardiaquemoy', 'fcmoy', 'bpmmoy']);
         $minHr = $this->findNumericFieldContaining($data, ['cardiaquemin', 'fcmin']);
         $maxHr = $this->findNumericFieldContaining($data, ['cardiaquemax', 'fcmax']);
-        $hasHrReference = $maxHr !== null || $this->hasFieldContaining($data, ['zone']);
+        $age = $this->findAge($data);
+        // La « FC max » saisie est le pic atteint pendant la séance, PAS la
+        // fréquence maximale de la personne : seuls l'âge ou des zones
+        // permettent de situer l'intensité.
+        $hasHrReference = $age !== null || $this->hasFieldContaining($data, ['zone']);
 
         $context = "RÈGLES POUR CETTE SÉANCE DE FITNESS, à respecter strictement : "
             . "1. N'invente AUCUN exercice, répétition, charge, groupe musculaire ni résultat qui ne figure pas dans les données ou les notes. "
@@ -113,14 +117,33 @@ class PromptGenerator
             if ($minHr !== null && $maxHr !== null) {
                 $context .= sprintf("Plage observée pendant la séance : %.0f à %.0f bpm. ", $minHr, $maxHr);
             }
-            if ($hasHrReference) {
-                $context .= "Les données fournissent une référence (fréquence max ou zones) : tu peux situer la fréquence moyenne par rapport à elle, sans rien inventer de plus. ";
+            if ($maxHr !== null) {
+                $context .= "Le champ de fréquence cardiaque max est le pic atteint PENDANT cette séance, PAS la fréquence maximale de l'utilisateur. ";
+            }
+            if ($age !== null) {
+                $theoreticalMax = 220 - $age;
+                $percent = $avgHr / $theoreticalMax * 100;
+                $intensity = match (true) {
+                    $percent < 64 => 'légère',
+                    $percent < 77 => 'modérée',
+                    $percent < 96 => 'soutenue',
+                    default => 'maximale',
+                };
+                $context .= sprintf(
+                    "Âge renseigné : %.0f ans, donc fréquence cardiaque maximale théorique estimée à %.0f bpm (formule 220 − âge, estimation indicative). La fréquence moyenne représente %.0f %% de ce maximum → intensité cardiaque estimée : %s (verdict calculé, à utiliser tel quel en précisant que c'est une estimation ; ne la qualifie pas autrement). ",
+                    $age,
+                    $theoreticalMax,
+                    $percent,
+                    $intensity
+                );
+            } elseif ($hasHrReference) {
+                $context .= "Les données fournissent des zones de fréquence cardiaque : tu peux t'y référer, sans rien inventer de plus. ";
             } else {
                 $context .= "Tu ne connais NI l'âge, NI la fréquence cardiaque maximale, NI les zones d'entraînement de l'utilisateur : tu ne peux donc PAS qualifier cette fréquence cardiaque (ni « élevée », ni « basse », ni « bonne », ni « excellente »), ni parler d'effort cardiaque bon ou mauvais. Cite-la comme simple donnée chiffrée, sans jugement, ou ne la cite pas. ";
             }
         }
 
-        $context .= "Ne qualifie l'intensité de la séance (légère, modérée, soutenue, intense) que si les données la fournissent explicitement. ";
+        $context .= "Ne qualifie l'intensité de la séance (légère, modérée, soutenue, intense) que si les données ou le calcul ci-dessus la fournissent. ";
 
         if (!$hasHistory) {
             $context .= "C'est la PREMIÈRE séance enregistrée dans cette catégorie : il n'y a aucune comparaison, progression ou régularité à commenter, n'en parle pas. ";
@@ -149,6 +172,22 @@ class PromptGenerator
                 if (str_contains($normalizedKey, $needle)) {
                     return (float) $value;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Âge saisi dans un champ « age » / « âge (ans) » (valeur plausible
+     * uniquement), sinon null.
+     */
+    private function findAge(array $data): ?float
+    {
+        foreach ($data as $key => $value) {
+            $normalizedKey = mb_strtolower($this->normalizeKey((string) $key));
+            if (preg_match('/^[aâ]ge(?:\(|$)/u', $normalizedKey) && is_numeric($value) && $value >= 10 && $value <= 100) {
+                return (float) $value;
             }
         }
 
