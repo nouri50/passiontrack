@@ -177,6 +177,17 @@ final class AnalysisController extends AbstractController
             }
         }
 
+        // Garde-fou déterministe (16) : en autoland, retire les conseils de
+        // pilotage de l'approche (vitesse verticale, gaz, puissance, arrondi).
+        if ($this->isAutolandSession($session)) {
+            if (is_array($result['content'] ?? null)) {
+                $result['content'] = $this->stripCannedApproachAdvice($result['content'], self::AUTOLAND_PILOTING_PATTERN);
+            }
+            if (is_string($result['summary'] ?? null)) {
+                $result['summary'] = $this->stripCannedApproachSentences($result['summary'], self::AUTOLAND_PILOTING_PATTERN);
+            }
+        }
+
         // Garde-fou déterministe (10) : voir neutralizeIncidentRestatement().
         $declaredIncident = $this->getDeclaredIncident($session);
         if ($declaredIncident !== null && is_array($result['content'] ?? null)) {
@@ -871,6 +882,17 @@ final class AnalysisController extends AbstractController
     private const AIRLINER_THROTTLE_PATTERN = '/^(?!.*(?:arrondi|touchdown|toucher|flare|\\bpos[ée]e?\\b|sur la piste|seuil de piste)).*?(?:\\br[ée]dui\\w*\\s+(?:(?:progressivement|r[ée]guli[èe]rement|les)\\s+)*gaz\\b|\\bgaz\\s+[àa]\\s+un\\s+taux\\b|\\bmanette\\s+des\\s+gaz\\b)/isu';
 
     /**
+     * Garde-fou déterministe (16) : en autoland, c'est l'automatisme qui
+     * pose l'avion — le pilote n'agit ni sur la vitesse verticale, ni sur
+     * les gaz, ni sur l'arrondi. Le modèle donnait pourtant des conseils de
+     * pilotage de l'approche (« réduisez la vitesse verticale en utilisant la
+     * commande des gaz… »). Seules les formes impératives / infinitives sont
+     * visées : une phrase factuelle (« vitesse verticale à l'impact de
+     * -260 fpm ») ou « l'autopilote gère… » n'est jamais retirée.
+     */
+    private const AUTOLAND_PILOTING_PATTERN = '/\\b(?:r[ée]dui(?:re|sez|sons)|diminu(?:er|ez)|augment(?:er|ez)|contr[ôo]l(?:er|ez)|ajust(?:er|ez)|ma[iî]tris(?:er|ez)|anticip(?:er|ez)|adouci(?:r|ssez)|am[ée]lior(?:er|ez)|g[ée]r(?:er|ez)|modul(?:er|ez)|corrig(?:er|ez))\\b[^.!?]{0,80}?\\b(?:vitesse\\s+verticale|taux\\s+de\\s+descente|gaz|puissance|[ée]nergie|arrondi|flare)\\b|\\b(?:commande|manette)\\s+(?:des\\s+gaz|de\\s+(?:la\\s+)?puissance)\\b|\\bpuissance\\s+moteur\\b/iu';
+
+    /**
      * Garde-fou déterministe (9) : le modèle recopiait dans presque toutes les
      * analyses l'ancien exemple de conseil du prompt (« réduire les gaz plus
      * tôt en finale pour stabiliser la vitesse avant l'interception du plan de
@@ -971,6 +993,22 @@ final class AnalysisController extends AbstractController
      * Vrai si la session déclare un « Type d'appareil » avion de ligne
      * (champ dynamique de la catégorie Aviation).
      */
+    private function isAutolandSession(Session $session): bool
+    {
+        foreach ($session->getData() ?? [] as $key => $value) {
+            $normalizedKey = strtolower(str_replace([' ', "'", '’', '_', '-'], '', (string) $key));
+            if ($normalizedKey === 'autoland') {
+                if (is_bool($value)) {
+                    return $value;
+                }
+
+                return in_array(strtolower((string) $value), ['true', '1', 'yes'], true);
+            }
+        }
+
+        return false;
+    }
+
     private function isAirlinerSession(Session $session): bool
     {
         $normalize = static fn(string $s): string => strtolower(str_replace([' ', "'", '’', '_', '-'], '', $s));
