@@ -159,7 +159,8 @@
         "fshubImporting": "Import...",
         "fshubImportSuccess": "Vol FSHub importé avec succès.",
         "fshubFilledFields": "Vol FSHub importé — champs remplis automatiquement : {{fields}}",
-        "fshubErrorGeneric": "Erreur lors de l'import FSHub."
+        "fshubErrorGeneric": "Erreur lors de l'import FSHub.",
+        "duplicate": "Dupliquer"
     },
     "categories": {
         "errorNameRequired": "Le nom de la catégorie est obligatoire.",

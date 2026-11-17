@@ -159,7 +159,8 @@
         "fshubImporting": "Importing...",
         "fshubImportSuccess": "FSHub flight imported successfully.",
         "fshubFilledFields": "FSHub flight imported — auto-filled fields: {{fields}}",
-        "fshubErrorGeneric": "Error importing from FSHub."
+        "fshubErrorGeneric": "Error importing from FSHub.",
+        "duplicate": "Duplicate"
     },
     "categories": {
         "errorNameRequired": "Category name is required.",

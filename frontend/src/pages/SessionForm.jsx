@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getCategories } from "../services/categoryService";
-import { createSession, getSessions } from "../services/sessionService";
+import {
+  createSession,
+  getSessions,
+  getSession,
+} from "../services/sessionService";
 import useToastStore from "../stores/toastStore";
 import { getApiErrorMessage } from "../utils/apiError";
 import "../styles/SessionForm.css";
@@ -16,9 +20,24 @@ function slugifyKey(label) {
     .replace(/^_|_$/g, "");
 }
 
+// Champs remplis par un import (SimBit / FSHub) : propres à un vol précis,
+// donc jamais recopiés quand on duplique une session.
+const IMPORTED_DATA_KEYS = [
+  "xp",
+  "score",
+  "landing_rate",
+  "landing_gforce",
+  "block_time",
+  "flight_time",
+  "departure",
+  "arrival",
+];
+
 function SessionForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const duplicateId = searchParams.get("duplicate");
   const addToast = useToastStore((state) => state.addToast);
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState("");
@@ -44,6 +63,23 @@ function SessionForm() {
       try {
         const data = await getCategories();
         setCategories(Array.isArray(data) ? data : []);
+
+        // Duplication : préremplit le formulaire avec la session d'origine.
+        // Dates, durée, notes, analyse, pièce jointe et données importées
+        // ne sont pas recopiées (elles sont propres à chaque vol).
+        if (duplicateId) {
+          const source = await getSession(duplicateId);
+          setCategoryId(String(source.category_id));
+          setSubcategory(source.subcategory || "");
+          setTitle(source.title || "");
+          setDescription(source.description || "");
+
+          const copiedData = { ...(source.data || {}) };
+          IMPORTED_DATA_KEYS.forEach((key) => {
+            delete copiedData[key];
+          });
+          setExtraData(copiedData);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -51,7 +87,7 @@ function SessionForm() {
       }
     }
     load();
-  }, []);
+  }, [duplicateId]);
 
   useEffect(() => {
     if (!categoryId) {

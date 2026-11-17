@@ -82,13 +82,14 @@ function SessionDetail() {
       }
     }
     load();
-  }, [id]);
+  }, [id, t]);
+
+  const sessionCategory = session?.category_slug;
 
   useEffect(() => {
     // Les imports de vol (SimBit / FSHub) et la trace n'existent que pour la
     // catégorie Aviation : inutile d'interroger l'API pour les autres.
-    if (!session || session.category_slug !== "aviation") {
-      setTrace(null);
+    if (sessionCategory !== "aviation") {
       return;
     }
 
@@ -110,7 +111,7 @@ function SessionDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, session?.attachment_url]);
+  }, [id, sessionCategory, session?.attachment_url]);
 
   const handleAnalyze = async () => {
     setAnalysisLoading(true);
@@ -337,6 +338,12 @@ function SessionDetail() {
           <Link to={`/sessions/${id}/edit`} className="session-detail-edit">
             {t("sessionDetail.edit")}
           </Link>
+          <Link
+            to={`/sessions/new?duplicate=${id}`}
+            className="session-detail-edit"
+          >
+            {t("sessionDetail.duplicate")}
+          </Link>
           <button className="session-detail-delete" onClick={handleDeleteClick}>
             {t("common.delete")}
           </button>
@@ -432,7 +439,9 @@ function SessionDetail() {
                   <input
                     type="file"
                     accept=".xlsx"
-                    onChange={(e) => setAttachmentFile(e.target.files[0] ?? null)}
+                    onChange={(e) =>
+                      setAttachmentFile(e.target.files[0] ?? null)
+                    }
                   />
                 </label>
                 <button
