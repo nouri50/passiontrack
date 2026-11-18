@@ -888,9 +888,12 @@ final class AnalysisController extends AbstractController
      * pilotage de l'approche (« réduisez la vitesse verticale en utilisant la
      * commande des gaz… »). Seules les formes impératives / infinitives sont
      * visées : une phrase factuelle (« vitesse verticale à l'impact de
-     * -260 fpm ») ou « l'autopilote gère… » n'est jamais retirée.
+     * -260 fpm ») ou « l'autopilote gère… » n'est jamais retirée. Les phrases
+     * de résumé qui annoncent ces conseils (« Conseils donnés pour améliorer
+     * la gestion de la vitesse en approche ») sont retirées aussi, sinon elles
+     * renvoient à des conseils qui n'existent plus.
      */
-    private const AUTOLAND_PILOTING_PATTERN = '/\\b(?:r[ée]dui(?:re|sez|sons)|diminu(?:er|ez)|augment(?:er|ez)|contr[ôo]l(?:er|ez)|ajust(?:er|ez)|ma[iî]tris(?:er|ez)|anticip(?:er|ez)|adouci(?:r|ssez)|am[ée]lior(?:er|ez)|g[ée]r(?:er|ez)|modul(?:er|ez)|corrig(?:er|ez))\\b[^.!?]{0,80}?\\b(?:vitesse\\s+verticale|taux\\s+de\\s+descente|gaz|puissance|[ée]nergie|arrondi|flare)\\b|\\b(?:commande|manette)\\s+(?:des\\s+gaz|de\\s+(?:la\\s+)?puissance)\\b|\\bpuissance\\s+moteur\\b/iu';
+    private const AUTOLAND_PILOTING_PATTERN = '/\\b(?:r[ée]dui(?:re|sez|sons)|diminu(?:er|ez)|augment(?:er|ez)|contr[ôo]l(?:er|ez)|ajust(?:er|ez)|ma[iî]tris(?:er|ez)|anticip(?:er|ez)|adouci(?:r|ssez)|am[ée]lior(?:er|ez)|g[ée]r(?:er|ez)|modul(?:er|ez)|corrig(?:er|ez))\\b[^.!?]{0,80}?\\b(?:vitesse\\s+verticale|taux\\s+de\\s+descente|gaz|puissance|[ée]nergie|arrondi|flare)\\b|\\b(?:commande|manette)\\s+(?:des\\s+gaz|de\\s+(?:la\\s+)?puissance)\\b|\\bpuissance\\s+moteur\\b|\\bconseils?\\b[^.!?]{0,60}?\\b(?:am[ée]lior|g[ée]r|ma[iî]tris|contr[ôo]l)\\w*[^.!?]{0,60}?\\b(?:vitesse|approche|atterrissage)\\b/iu';
 
     /**
      * Garde-fou déterministe (9) : le modèle recopiait dans presque toutes les
