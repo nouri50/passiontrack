@@ -313,7 +313,7 @@ class PromptGenerator
         return null;
     }
 
-    private function isAutoland(array $data): bool
+    public function isAutoland(array $data): bool
     {
         foreach ($data as $key => $value) {
             if ($this->normalizeKey((string) $key) === 'autoland') {

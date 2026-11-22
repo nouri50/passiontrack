@@ -189,6 +189,15 @@ class ChatService
             );
         }
 
+        // Session récente en autoland : l'atterrissage est automatique, donc
+        // aucun conseil de pilotage de l'approche n'a de sens pour ce vol.
+        foreach ($recentSessions as $recent) {
+            if ($this->isAutolandSession($recent)) {
+                $context .= " Pour une session marquée « atterrissage en autoland », l'atterrissage est automatique : ne donne AUCUN conseil de pilotage de l'approche ou de l'atterrissage pour ce vol (vitesse, gaz, puissance, énergie, arrondi, vitesse verticale) et ne félicite ni ne critique le pilote sur ces points.";
+                break;
+            }
+        }
+
         return $context;
     }
 
@@ -205,16 +214,28 @@ class ChatService
             }
         }
 
+        $parts = [];
+
         $seconds = $session->getDuration();
-        if ($seconds === null || $seconds <= 0) {
-            return null;
+        if ($seconds !== null && $seconds > 0) {
+            $minutes = (int) round($seconds / 60);
+            $parts[] = $minutes >= 60
+                ? sprintf('durée : %d h %02d', intdiv($minutes, 60), $minutes % 60)
+                : sprintf('durée : %d min', $minutes);
         }
 
-        $minutes = (int) round($seconds / 60);
+        // Atterrissage automatique : le modèle de chat ne doit pas donner de
+        // conseil de pilotage de l'approche pour ce vol.
+        if ($this->isAutolandSession($session)) {
+            $parts[] = 'atterrissage en autoland';
+        }
 
-        return $minutes >= 60
-            ? sprintf('durée : %d h %02d', intdiv($minutes, 60), $minutes % 60)
-            : sprintf('durée : %d min', $minutes);
+        return $parts === [] ? null : implode(', ', $parts);
+    }
+
+    private function isAutolandSession(Session $session): bool
+    {
+        return $this->promptGenerator->isAutoland($session->getData() ?? []);
     }
 
     /**
