@@ -897,7 +897,7 @@ final class AnalysisController extends AbstractController
      * la gestion de la vitesse en approche ») sont retirées aussi, sinon elles
      * renvoient à des conseils qui n'existent plus.
      */
-    private const AUTOLAND_PILOTING_PATTERN = '/\\b(?:r[ée]dui(?:re|sez|sons)|diminu(?:er|ez)|augment(?:er|ez)|contr[ôo]l(?:er|ez)|ajust(?:er|ez)|ma[iî]tris(?:er|ez)|anticip(?:er|ez)|adouci(?:r|ssez)|am[ée]lior(?:er|ez)|g[ée]r(?:er|ez)|modul(?:er|ez)|corrig(?:er|ez))\\b[^.!?]{0,80}?\\b(?:vitesse\\s+verticale|taux\\s+de\\s+descente|gaz|puissance|[ée]nergie|arrondi|flare)\\b|\\b(?:commande|manette)\\s+(?:des\\s+gaz|de\\s+(?:la\\s+)?puissance)\\b|\\bpuissance\\s+moteur\\b|\\br[ée]duction\\b[^.!?]{0,60}?\\bplus\\s+t[ôo]t\\b|\\bplus\\s+t[ôo]t\\s+en\\s+(?:approche|finale)\\b|\\bconseils?\\b[^.!?]{0,60}?\\b(?:am[ée]lior|g[ée]r|ma[iî]tris|contr[ôo]l)\\w*[^.!?]{0,60}?\\b(?:vitesse|approche|atterrissage)\\b/iu';
+    private const AUTOLAND_PILOTING_PATTERN = '/\\b(?:r[ée]dui(?:re|sez|sons)|diminu(?:er|ez)|augment(?:er|ez)|contr[ôo]l(?:er|ez)|ajust(?:er|ez)|ma[iî]tris(?:er|ez)|anticip(?:er|ez)|adouci(?:r|ssez)|am[ée]lior(?:er|ez)|g[ée]r(?:er|ez)|modul(?:er|ez)|corrig(?:er|ez))\\b[^.!?]{0,80}?\\b(?:vitesse\\s+verticale|taux\\s+de\\s+descente|gaz|puissance|[ée]nergie|arrondi|flare)\\b|\\b(?:commande|manette)\\s+(?:des\\s+gaz|de\\s+(?:la\\s+)?puissance)\\b|\\bpuissance\\s+moteur\\b|\\b(?:gestion|ma[iî]trise|contr[ôo]le)\\s+de\\s+l[\\x27’]\\s*[ée]nergie\\b|\\br[ée]duction\\b[^.!?]{0,60}?\\bplus\\s+t[ôo]t\\b|\\bplus\\s+t[ôo]t\\s+en\\s+(?:approche|finale)\\b|\\bconseils?\\b[^.!?]{0,60}?\\b(?:am[ée]lior|g[ée]r|ma[iî]tris|contr[ôo]l)\\w*[^.!?]{0,60}?\\b(?:vitesse|approche|atterrissage)\\b/iu';
 
     /**
      * Garde-fou déterministe (9) : le modèle recopiait dans presque toutes les
@@ -942,7 +942,8 @@ final class AnalysisController extends AbstractController
     }
 
     /**
-     * Retire d'un texte les propositions (séparées par des virgules) qui
+     * Retire d'un texte les propositions (séparées par des virgules ou par
+     * « avec / et / mais ») qui
      * correspondent au motif ; une phrase entière qui disparaîtrait est
      * supprimée, et si tout le texte disparaissait on garde l'original.
      */
@@ -960,7 +961,7 @@ final class AnalysisController extends AbstractController
                 continue;
             }
             $ending = preg_match('/[.!?]$/u', $sentence) ? mb_substr($sentence, -1) : '';
-            $clauses = preg_split('/\s*,\s*/u', rtrim($sentence, '.!?'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $clauses = preg_split('/\s*,\s*|\s+(?:avec|et|mais|tout en)\s+/u', rtrim($sentence, '.!?'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
             $clauses = array_values(array_filter($clauses, static fn(string $c) => !preg_match($pattern, $c)));
             if ($clauses !== []) {
                 $kept[] = implode(', ', $clauses) . $ending;
