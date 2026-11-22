@@ -135,7 +135,7 @@ class ChatService
             implode(', ', $recentParts)
         );
 
-        $context .= " Les chiffres entre crochets (durée, chiffres clés) sont exacts : tu peux les citer tels quels, sans les modifier ni en déduire d'autres. Pour une séance de fitness, ne qualifie pas les calories ou la fréquence cardiaque (élevées, faibles, bonnes) au-delà de l'intensité estimée éventuellement fournie.";
+        $context .= " Les chiffres entre crochets (durée, chiffres clés, atterrissage avec son verdict) sont exacts et propres à CHAQUE session : tu peux les citer tels quels, sans les modifier ni en déduire d'autres, et tu n'attribues JAMAIS le verdict ou le point faible d'une session à une autre. Un verdict « bon » n'est pas un point à travailler. Pour une séance de fitness, ne qualifie pas les calories ou la fréquence cardiaque (élevées, faibles, bonnes) au-delà de l'intensité estimée éventuellement fournie.";
 
         // Phrase dédiée et sans ambiguïté sur LA session la plus récente
         // (recentSessions[0], déjà triée DESC par date), pour éviter que le
@@ -165,6 +165,11 @@ class ChatService
                 $latestSession->getDateStart()->format('d/m/Y'),
                 implode('; ', $latestWeaknesses)
             ));
+
+        $context .= sprintf(
+            ' La session la plus récente est "%s" : ses chiffres, ses verdicts et ses points faibles sont uniquement ceux indiqués pour elle, jamais ceux des sessions précédentes.',
+            $latestSession->getTitle()
+        );
 
         // Aucune des sessions récentes n'a de point faible : on le dit
         // explicitement pour que le modèle n'en invente pas un (observé :
@@ -222,6 +227,26 @@ class ChatService
             $parts[] = $minutes >= 60
                 ? sprintf('durée : %d h %02d', intdiv($minutes, 60), $minutes % 60)
                 : sprintf('durée : %d min', $minutes);
+        }
+
+        // Verdicts officiels d'atterrissage de CE vol (mêmes seuils que
+        // l'analyse IA) : sans eux, le modèle attribuait les points faibles
+        // d'une session à une autre (« petit challenge avec le taux de
+        // descente » sur un vol à -118 fpm « bon »).
+        if ($session->getCategory()->getSlug() === 'aviation') {
+            $verdict = $this->promptGenerator->computeLandingVerdictForSession($session);
+            if ($verdict !== null) {
+                $landing = [];
+                if (isset($verdict['rate'], $verdict['rate_verdict'])) {
+                    $landing[] = sprintf('%.0f fpm (%s)', $verdict['rate'], str_replace(' (atterrissage doux)', '', $verdict['rate_verdict']));
+                }
+                if (isset($verdict['gforce'], $verdict['gforce_verdict'])) {
+                    $landing[] = sprintf('%s G (%s)', number_format((float) $verdict['gforce'], 2, ',', ''), $verdict['gforce_verdict']);
+                }
+                if ($landing !== []) {
+                    $parts[] = 'atterrissage : ' . implode(', ', $landing);
+                }
+            }
         }
 
         // Atterrissage automatique : le modèle de chat ne doit pas donner de
