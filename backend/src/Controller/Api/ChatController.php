@@ -54,6 +54,12 @@ final class ChatController extends AbstractController
             return $this->json(['error' => 'CHAT_FAILED'], 502);
         }
 
+        // Garde-fou déterministe : le modèle de chat (Qwen, d'origine chinoise)
+        // termine parfois sa réponse par une phrase en chinois (observé :
+        // « 继续加油哦! ») malgré la consigne de répondre en français. On
+        // retire ces caractères — voir stripForeignScript().
+        $reply = $this->stripForeignScript($reply);
+
         // Garde-fou déterministe : le chat confond parfois un Landing
         // Rate/Gforce élevé avec un "décrochage" (stall) — une erreur
         // factuelle grave, pas une simple imprécision de style, déjà
@@ -75,6 +81,29 @@ final class ChatController extends AbstractController
         $reply = $this->stripSessionsPageMisclaim($reply);
 
         return $this->json(['reply' => $reply]);
+    }
+
+    /**
+     * Retire de la réponse du chat tout caractère chinois / japonais /
+     * coréen (et la ponctuation pleine largeur associée). Le français n'en
+     * contient jamais : le retrait ne peut pas abîmer une réponse correcte.
+     * Les doublons de « ! » ou « ? » laissés par le retrait sont fusionnés ;
+     * si rien ne reste, on retombe sur une réponse sûre.
+     */
+    private function stripForeignScript(string $reply): string
+    {
+        $cleaned = preg_replace('/[\x{2E80}-\x{2FDF}\x{3000}-\x{30FF}\x{3130}-\x{318F}\x{3400}-\x{4DBF}\x{4E00}-\x{9FFF}\x{AC00}-\x{D7AF}\x{F900}-\x{FAFF}\x{FF00}-\x{FFEF}]+/u', '', $reply);
+        if ($cleaned === null || $cleaned === $reply) {
+            return $reply;
+        }
+
+        $cleaned = preg_replace('/([!?])(?:\s*\1)+/u', '$1', $cleaned) ?? $cleaned;
+        $cleaned = preg_replace('/[ \t]{2,}/u', ' ', $cleaned) ?? $cleaned;
+        $cleaned = trim($cleaned);
+
+        return preg_match('/\\p{L}/u', $cleaned)
+            ? $cleaned
+            : "Je n'ai pas de réponse fiable à te donner pour l'instant — reformule ta question en français.";
     }
 
     /**
