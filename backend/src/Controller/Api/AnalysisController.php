@@ -237,9 +237,13 @@ final class AnalysisController extends AbstractController
             $result['summary'] = $this->fixHardLandingText($result['summary']);
         }
 
-        // Garde-fou déterministe (15) : fitness sans référence cardiaque (FC max
-        // ou zones) — voir stripUnfoundedHeartRateJudgement().
-        if ($session->getCategory()->getSlug() === 'fitness' && !$this->hasHeartRateReference($session)) {
+        // Garde-fou déterministe (15) : séance de fitness — le modèle ne juge
+        // jamais la fréquence cardiaque (même avec l'âge : il écrivait
+        // « intensité élevée » pour 74 % de la FC max théorique, soit
+        // « modérée »). L'intensité officielle est donnée par la ligne
+        // « Chiffres clés » ajoutée plus bas — voir
+        // stripUnfoundedHeartRateJudgement().
+        if ($session->getCategory()->getSlug() === 'fitness') {
             if (is_array($result['content'] ?? null)) {
                 $result['content'] = $this->stripUnfoundedHeartRateJudgement($result['content']);
                 if (isset($result['content']['summary'])) {
@@ -975,7 +979,7 @@ final class AnalysisController extends AbstractController
      * Jugement sur la fréquence cardiaque (« élevée », « bon effort cardiaque »…).
      * Sans âge, FC max ni zones, rien ne permet de l'affirmer.
      */
-    private const UNFOUNDED_HEART_RATE_PATTERN = '/(?:fr[ée]quence\\s+cardiaque|\\bfc\\b|\\bbpm\\b|\\bcardiaque\\b|\\bpouls\\b)[^.!?]{0,80}?\\b(?:[ée]lev[ée]e?s?|bon(?:ne)?s?|excellente?s?|haute?s?|basse?s?|faibles?|optimale?s?|id[ée]ale?s?|intenses?|soutenue?s?|mod[ée]r[ée]e?s?|satisfaisante?s?)\\b|\\b(?:bon|excellent|bel|gros|fort|solide)\\s+effort\\s+cardi\\w*|\\beffort\\s+cardi\\w*\\s+(?:bon|excellent|soutenu|[ée]lev[ée]|important|mod[ée]r[ée])/iu';
+    private const UNFOUNDED_HEART_RATE_PATTERN = '/(?:fr[ée]quence\\s+cardiaque|\\bfc\\b|\\bbpm\\b|\\bcardiaque\\b|\\bpouls\\b)[^.!?]{0,80}?\\b(?:[ée]lev[ée]e?s?|bon(?:ne)?s?|excellente?s?|haute?s?|basse?s?|faibles?|optimale?s?|id[ée]ale?s?|intenses?|soutenue?s?|mod[ée]r[ée]e?s?|satisfaisante?s?)\\b|\\b(?:bon|excellent|bel|gros|fort|solide)\\s+effort\\s+cardi\\w*|\\beffort\\s+cardi\\w*\\s+(?:bon|excellent|soutenu|[ée]lev[ée]|important|mod[ée]r[ée])|\\bintensit[ée]\\s+(?:cardiaque\\s+)?(?:[ée]lev[ée]e?s?|haute|forte|basse|faible|intense|soutenue|mod[ée]r[ée]e|maximale|l[ée]g[èe]re)\\b/iu';
 
     /**
      * Vrai si la séance fournit une référence cardiaque : un âge plausible
@@ -1002,8 +1006,7 @@ final class AnalysisController extends AbstractController
     }
 
     /**
-     * Garde-fou déterministe (15) : sur une séance de fitness sans référence
-     * cardiaque, retire des points forts/faibles/conseils et du résumé toute
+     * Garde-fou déterministe (15) : sur une séance de fitness, retire des points forts/faibles/conseils et du résumé toute
      * phrase qui juge la fréquence cardiaque (observé : « Fréquence cardiaque
      * moyenne élevée (123 bpm) » en point fort et « bon effort cardiaque » dans
      * le résumé, alors que le modèle ne connaît ni l'âge ni la FC max).
